@@ -43,17 +43,17 @@ std::string RealsenseL515::getDepthFrame() const
 
 void RealsenseL515::filter(pcl::PointCloud<pcl::PointXYZ>::Ptr pc) const
 {
-    pcl::PointIndices::Ptr toRemove(new pcl::PointIndices());
+    pcl::PointIndices::Ptr to_remove(new pcl::PointIndices());
     pcl::ExtractIndices<pcl::PointXYZ> extract;
 
     for (int i = 0; i < pc->size(); i++)
     {
         if (pc->points[i].z < -0.5 || !std::isfinite(pc->points[i].x) || !std::isfinite(pc->points[i].y) || !std::isfinite(pc->points[i].z)) {
-            toRemove->indices.push_back(i);
+            to_remove->indices.push_back(i);
         }
     }
     extract.setInputCloud(pc);
-    extract.setIndices(toRemove);
+    extract.setIndices(to_remove);
     extract.setNegative(true);
     extract.filter(*pc);
 }
