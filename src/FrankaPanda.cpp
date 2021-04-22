@@ -28,10 +28,10 @@ bool FrankaPanda::executeMotion(const MoveGroupInterface::Plan& plan)
     return move_group_.execute(plan) == MoveItErrorCode::SUCCESS;
 }
 
-bool FrankaPanda::realsenseCapture()
+bool FrankaPanda::captureRealsensePointcloud()
 {
     tf::StampedTransform transform;
-    if (!getTransform("/world", "/camera_depth_optical_frame", transform)) {
+    if (!getTransform(WORLD_FRAME, realsense_.getDepthFrame(), transform)) {
         return false;
     }
 
@@ -42,12 +42,9 @@ bool FrankaPanda::realsenseCapture()
 
 bool FrankaPanda::getRealsensePointcloud(sensor_msgs::PointCloud2& out_pc)
 {
-    tf::StampedTransform transform;
-    if (!getTransform("/camera_depth_optical_frame", "/world", transform)) {
-        return false;
-    }
-
-    out_pc = realsense_.getPointcloud(transform);
+    out_pc = realsense_.getPointcloud();  
+    out_pc.header.frame_id = WORLD_FRAME;
+    out_pc.header.stamp = ros::Time::now();
 
     return true;
 }

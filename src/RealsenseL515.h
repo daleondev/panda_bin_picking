@@ -14,12 +14,13 @@ public:
 
     bool capture(const tf::StampedTransform& transform);
 
-    sensor_msgs::PointCloud2 getPointcloud(const tf::StampedTransform& transform);
+    sensor_msgs::PointCloud2 getPointcloud(const tf::StampedTransform* transform = nullptr) const;
+    std::string getDepthFrame() const;
 
 private:
-    void filter(pcl::PointCloud<pcl::PointXYZ>::Ptr pc);
+    void filter(pcl::PointCloud<pcl::PointXYZ>::Ptr pc) const;
 
     pcl::PointCloud<pcl::PointXYZ>::Ptr pc_;
-    std_msgs::Header header_;
-
+    
+    const std::string DEPTH_FRAME = "/camera_depth_optical_frame";
 };

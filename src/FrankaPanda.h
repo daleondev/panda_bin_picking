@@ -22,9 +22,9 @@ public:
 
     bool executeMotion(const MoveGroupInterface::Plan& plan);
 
-    bool realsenseCapture();
-    bool getRealsensePointcloud(sensor_msgs::PointCloud2& out_pc);
+    bool captureRealsensePointcloud();
 
+    bool getRealsensePointcloud(sensor_msgs::PointCloud2& out_pc);
     bool getTransform(const std::string& target_frame, const std::string& source_frame, tf::StampedTransform& out_transform);
 
 private:
@@ -32,8 +32,8 @@ private:
     RobotModelLoader robot_model_loader_;
     RobotModelPtr robot_model_;
     RobotStatePtr robot_state_;
-
     RealsenseL515 realsense_;
     
     const std::string PLANNING_GROUP = "panda_arm";
+    const std::string WORLD_FRAME = "/world";
 };
