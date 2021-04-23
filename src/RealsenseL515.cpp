@@ -1,5 +1,11 @@
 #include "RealsenseL515.h"
 
+#include <pcl/io/pcd_io.h>
+#include <pcl/filters/voxel_grid.h>
+#include <pcl/filters/extract_indices.h>
+#include <pcl/registration/icp.h>
+#include <pcl_conversions/pcl_conversions.h>
+
 RealsenseL515::RealsenseL515()
 : pc_{ new pcl::PointCloud<pcl::PointXYZ>() }
 {
@@ -8,7 +14,7 @@ RealsenseL515::RealsenseL515()
 
 RealsenseL515::~RealsenseL515() = default;
 
-bool RealsenseL515::capture(const tf::StampedTransform& transform)
+void RealsenseL515::capture(const tf::StampedTransform& transform)
 {
     sensor_msgs::PointCloud2::ConstPtr pc_msg = ros::topic::waitForMessage<sensor_msgs::PointCloud2>("/realsense/depth/points");
 
@@ -56,4 +62,14 @@ void RealsenseL515::filter(pcl::PointCloud<pcl::PointXYZ>::Ptr pc) const
     extract.setIndices(toRemove);
     extract.setNegative(true);
     extract.filter(*pc);
+
+    pcl::VoxelGrid<pcl::PointXYZ> grid;
+    grid.setInputCloud(pc);
+    grid.setLeafSize (0.01f, 0.01f, 0.01f);
+    grid.filter(*pc);
+}
+
+void RealsenseL515::savePointcloud(const std::string& file) const
+{
+    pcl::io::savePCDFileASCII(file, *pc_);
 }

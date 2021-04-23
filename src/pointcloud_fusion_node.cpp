@@ -16,12 +16,9 @@ int main(int argc, char **argv)
   std::atomic_bool running(true);
   boost::thread publisher([&]() -> void {
     ros::Publisher pub = n.advertise<sensor_msgs::PointCloud2>("/fused_pointcloud", 1000);
-    sensor_msgs::PointCloud2 msg;
     while (running) {    
       ros::Duration(0.1).sleep();
-      if (panda.getRealsensePointcloud(msg)) {
-        pub.publish(msg);
-      }
+      pub.publish(panda.getRealsensePointcloud());
     }
   });  
 
@@ -55,6 +52,8 @@ int main(int argc, char **argv)
   ros::Duration(3).sleep();
   running = false;
   publisher.join();
+
+  panda.saveRealsensePointcloud();
 
   ros::shutdown();
   return 0;

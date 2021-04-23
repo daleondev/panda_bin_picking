@@ -24,8 +24,10 @@ public:
 
     bool captureRealsensePointcloud();
 
-    bool getRealsensePointcloud(sensor_msgs::PointCloud2& out_pc);
-    bool getTransform(const std::string& target_frame, const std::string& source_frame, tf::StampedTransform& out_transform);
+    sensor_msgs::PointCloud2 getRealsensePointcloud() const;
+    bool getTransform(const std::string& target_frame, const std::string& source_frame, tf::StampedTransform& out_transform) const;
+
+    void saveRealsensePointcloud() const;
 
 private:
     MoveGroupInterface move_group_;

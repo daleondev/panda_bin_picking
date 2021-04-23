@@ -40,16 +40,16 @@ bool FrankaPanda::captureRealsensePointcloud()
     return true;
 }
 
-bool FrankaPanda::getRealsensePointcloud(sensor_msgs::PointCloud2& out_pc)
+sensor_msgs::PointCloud2 FrankaPanda::getRealsensePointcloud() const
 {
-    out_pc = realsense_.getPointcloud();  
-    out_pc.header.frame_id = WORLD_FRAME;
-    out_pc.header.stamp = ros::Time::now();
+    sensor_msgs::PointCloud2 pc = realsense_.getPointcloud();  
+    pc.header.frame_id = WORLD_FRAME;
+    pc.header.stamp = ros::Time::now();
 
-    return true;
+    return pc;
 }
 
-bool FrankaPanda::getTransform(const std::string& target_frame, const std::string& source_frame, tf::StampedTransform& out_transform)
+bool FrankaPanda::getTransform(const std::string& target_frame, const std::string& source_frame, tf::StampedTransform& out_transform) const
 {
     tf::TransformListener listener;
 
@@ -64,4 +64,9 @@ bool FrankaPanda::getTransform(const std::string& target_frame, const std::strin
     }
 
     return true;
+}
+
+void FrankaPanda::saveRealsensePointcloud() const
+{
+    return realsense_.savePointcloud("pointcloud.pcd");
 }
