@@ -22,4 +22,5 @@ private:
     pcl::PointCloud<pcl::PointXYZ>::Ptr pc_;
     
     const std::string DEPTH_FRAME = "/camera_depth_optical_frame";
+    const std::string PC_TOPIC = "/realsense/depth/points";
 };

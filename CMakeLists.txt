@@ -11,6 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
   tf2_ros
   tf2_eigen
   tf2_geometry_msgs
+  gpd_ros
 )
 
 find_package(Eigen3 REQUIRED)
@@ -18,7 +19,8 @@ find_package(PCL REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system filesystem date_time thread)
 
 catkin_package(
-  CATKIN_DEPENDS roscpp moveit_core moveit_visual_tools moveit_ros_planning_interface tf2_geometry_msgs sensor_msgs pcl pcl_conversions pcl_ros
+  CATKIN_DEPENDS roscpp moveit_core moveit_visual_tools moveit_ros_planning_interface tf2_geometry_msgs sensor_msgs pcl pcl_conversions pcl_ros 
+  DEPENDS EIGEN3
 )
 
 include_directories(
@@ -28,17 +30,18 @@ include_directories(
   ${PCL_INCLUDE_DIRS}
 )
 
-add_executable(path_planning_node src/path_planning_node.cpp)
+# add_executable(path_planning_node src/path_planning_node.cpp)
 
-target_link_libraries(path_planning_node
+# target_link_libraries(path_planning_node
+#   ${catkin_LIBRARIES}
+#   ${Boost_LIBRARIES}
+# )
+
+add_executable(panda_bin_picking src/panda_bin_picking.cpp src/FrankaPanda.cpp src/RealsenseL515.cpp)
+add_dependencies(panda_bin_picking ${catkin_EXPORTED_TARGETS})
+target_link_libraries(panda_bin_picking
   ${catkin_LIBRARIES}
   ${Boost_LIBRARIES}
-)
-
-add_executable(pointcloud_fusion_node src/pointcloud_fusion_node.cpp src/FrankaPanda.cpp src/RealsenseL515.cpp)
-
-target_link_libraries(pointcloud_fusion_node
-  ${catkin_LIBRARIES}
-  ${Boost_LIBRARIES}
+  ${EIGEN3_LIBRARIES}
   ${PCL_LIBRARIES}
 )

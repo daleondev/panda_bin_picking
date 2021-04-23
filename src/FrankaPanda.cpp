@@ -1,31 +1,58 @@
 #include "FrankaPanda.h"
 
 FrankaPanda::FrankaPanda()
-: move_group_{ "panda_arm" }, robot_model_loader_{ "robot_description" }
+: move_group_arm_{ "panda_arm" }, move_group_hand_{ "hand" }, move_group_arm_hand_{ "panda_arm_hand" }, robot_model_loader_{ "robot_description" }
 {
     robot_model_ = robot_model_loader_.getModel();
     robot_state_ = std::make_shared<robot_state::RobotState>(robot_model_);
 
-    move_group_.setPlannerId("RRT");
+    move_group_arm_.setPlannerId("RRT");   
+    move_group_hand_.setPlannerId("RRT"); 
+    move_group_arm_hand_.setPlannerId("RRT"); 
 }
 
 FrankaPanda::~FrankaPanda() = default;
 
-bool FrankaPanda::planMotion(const std::vector<double>& target_joints, MoveGroupInterface::Plan& out_plan)
+bool FrankaPanda::planArmMotion(const std::vector<double>& target_joints, MoveGroupInterface::Plan& out_plan)
 {
-    move_group_.setJointValueTarget(target_joints);
-    return move_group_.plan(out_plan) == MoveItErrorCode::SUCCESS;
+    move_group_arm_.setJointValueTarget(target_joints);
+    return move_group_arm_.plan(out_plan) == MoveItErrorCode::SUCCESS;
 }
 
-bool FrankaPanda::planMotion(const geometry_msgs::Pose& target_pose, MoveGroupInterface::Plan& out_plan)
+bool FrankaPanda::planArmMotion(const geometry_msgs::Pose& target_pose, MoveGroupInterface::Plan& out_plan)
 {
-    move_group_.setPoseTarget(target_pose);
-    return move_group_.plan(out_plan) == MoveItErrorCode::SUCCESS;
+    move_group_arm_.setPoseTarget(target_pose);
+    return move_group_arm_.plan(out_plan) == MoveItErrorCode::SUCCESS;
 }
 
-bool FrankaPanda::executeMotion(const MoveGroupInterface::Plan& plan)
+bool FrankaPanda::planHandMotion(const std::string& name, MoveGroupInterface::Plan& out_plan)
 {
-    return move_group_.execute(plan) == MoveItErrorCode::SUCCESS;
+    move_group_hand_.setNamedTarget(name);
+    return move_group_hand_.plan(out_plan) == MoveItErrorCode::SUCCESS;
+}
+
+bool FrankaPanda::planArmHandMotion(const geometry_msgs::Pose& target_pose, MoveGroupInterface::Plan& out_plan)
+{
+    move_group_arm_hand_.setPoseTarget(target_pose);
+    return move_group_arm_hand_.plan(out_plan) == MoveItErrorCode::SUCCESS;
+}
+
+bool FrankaPanda::executeArmMotion(const MoveGroupInterface::Plan& plan, const float velocity)
+{
+    move_group_arm_.setMaxVelocityScalingFactor(velocity);
+    return move_group_arm_.execute(plan) == MoveItErrorCode::SUCCESS;
+}
+
+bool FrankaPanda::executeHandMotion(const MoveGroupInterface::Plan& plan, const float velocity)
+{
+    move_group_hand_.setMaxVelocityScalingFactor(velocity);
+    return move_group_hand_.execute(plan) == MoveItErrorCode::SUCCESS;
+}
+
+bool FrankaPanda::executeArmHandMotion(const MoveGroupInterface::Plan& plan, const float velocity)
+{
+    move_group_arm_hand_.setMaxVelocityScalingFactor(velocity);
+    return move_group_arm_hand_.execute(plan) == MoveItErrorCode::SUCCESS;
 }
 
 bool FrankaPanda::captureRealsensePointcloud()
@@ -68,5 +95,5 @@ bool FrankaPanda::getTransform(const std::string& target_frame, const std::strin
 
 void FrankaPanda::saveRealsensePointcloud() const
 {
-    return realsense_.savePointcloud("pointcloud.pcd");
+    realsense_.savePointcloud("pointcloud.pcd");
 }

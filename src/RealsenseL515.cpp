@@ -16,7 +16,7 @@ RealsenseL515::~RealsenseL515() = default;
 
 void RealsenseL515::capture(const tf::StampedTransform& transform)
 {
-    sensor_msgs::PointCloud2::ConstPtr pc_msg = ros::topic::waitForMessage<sensor_msgs::PointCloud2>("/realsense/depth/points");
+    sensor_msgs::PointCloud2::ConstPtr pc_msg = ros::topic::waitForMessage<sensor_msgs::PointCloud2>(PC_TOPIC);
 
     pcl::PointCloud<pcl::PointXYZ>::Ptr pc(new pcl::PointCloud<pcl::PointXYZ>());
     pcl::fromROSMsg(*pc_msg, *pc);
