@@ -90,7 +90,27 @@ static void grabObject(ros::NodeHandle& n, FrankaPanda& panda)
     error("no fitting grasp pose found");
   }
 
+  // float maxZ = FLOAT_MIN;
+  // for (auto grasp : grasps->grasps) {
+  //   if (grasp.position.z > maxZ) {
+  //     optimal_grasp = grasp;
+  //     maxZ = grasp.position.z;
+  //   }
+  // }
+
+  // if (maxZ == FLOAT_MIN) {
+  //   error("no fitting grasp pose found");
+  // }
+  
+  // Eigen::Vector3d x, y, z;
+  // tf::vectorMsgToEigen(optimal_grasp.approach, x);
+  // tf::vectorMsgToEigen(optimal_grasp.binormal, y);
+  // tf::vectorMsgToEigen(optimal_grasp.axis, z);
+
   Eigen::Matrix3f r;
+  // r.col(0) = x.cast<float>();
+  // r.col(1) = y.cast<float>();
+  // r.col(2) = z.cast<float>();
   r(0, 0) = optimal_grasp.approach.x;
   r(1, 0) = optimal_grasp.approach.y;
   r(2, 0) = optimal_grasp.approach.z;

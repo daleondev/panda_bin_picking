@@ -22,14 +22,15 @@ void RealsenseL515::capture(const tf::StampedTransform& transform)
     pcl::fromROSMsg(*pc_msg, *pc);
     pcl_ros::transformPointCloud(*pc, *pc, transform);
 
-    filter(pc);
+    filterPointcloud(pc);
+    thinOutPointcloud(0.01f, 0.01f, 0.01f, pc);
 
     *pc_ += *pc;
 }
 
 sensor_msgs::PointCloud2 RealsenseL515::getPointcloud(const tf::StampedTransform* transform) const
 {
-    sensor_msgs::PointCloud2 pc_msg;   
+    sensor_msgs::PointCloud2 pc_msg;  
 
     if (transform) {
         pcl::PointCloud<pcl::PointXYZ>::Ptr pc(new pcl::PointCloud<pcl::PointXYZ>());
@@ -47,7 +48,12 @@ std::string RealsenseL515::getDepthFrame() const
     return DEPTH_FRAME;
 }
 
-void RealsenseL515::filter(pcl::PointCloud<pcl::PointXYZ>::Ptr pc) const
+void RealsenseL515::savePointcloud(const std::string& file) const
+{
+    pcl::io::savePCDFileASCII(file, *pc_);
+}
+
+void RealsenseL515::filterPointcloud(pcl::PointCloud<pcl::PointXYZ>::Ptr pc) const
 {
     pcl::PointIndices::Ptr to_remove(new pcl::PointIndices());
     pcl::ExtractIndices<pcl::PointXYZ> extract;
@@ -62,14 +68,13 @@ void RealsenseL515::filter(pcl::PointCloud<pcl::PointXYZ>::Ptr pc) const
     extract.setIndices(to_remove);
     extract.setNegative(true);
     extract.filter(*pc);
-
-    pcl::VoxelGrid<pcl::PointXYZ> grid;
-    grid.setInputCloud(pc);
-    grid.setLeafSize (0.01f, 0.01f, 0.01f);
-    grid.filter(*pc);
 }
 
-void RealsenseL515::savePointcloud(const std::string& file) const
+void RealsenseL515::thinOutPointcloud(const float x, const float y, const float z, pcl::PointCloud<pcl::PointXYZ>::Ptr pc) const
 {
-    pcl::io::savePCDFileASCII(file, *pc_);
+    pcl::VoxelGrid<pcl::PointXYZ> grid;
+
+    grid.setInputCloud(pc);
+    grid.setLeafSize(x, y, z);
+    grid.filter(*pc);
 }

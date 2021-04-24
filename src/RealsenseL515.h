@@ -17,7 +17,8 @@ public:
     void savePointcloud(const std::string& file) const;
 
 private:
-    void filter(pcl::PointCloud<pcl::PointXYZ>::Ptr pc) const;
+    void filterPointcloud(pcl::PointCloud<pcl::PointXYZ>::Ptr pc) const;
+    void thinOutPointcloud(const float x, const float y, const float z, pcl::PointCloud<pcl::PointXYZ>::Ptr pc) const;
 
     pcl::PointCloud<pcl::PointXYZ>::Ptr pc_;
     
