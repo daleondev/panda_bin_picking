@@ -19,7 +19,7 @@
 static void capturePointclouds(ros::NodeHandle& n, FrankaPanda& panda);
 static void grabObject(ros::NodeHandle& n, FrankaPanda& panda);
 
-static visualization_msgs::MarkerArray createGraspMarkers(const gpd_ros::GraspConfig& grasp);
+static visualization_msgs::MarkerArray createGraspMarkers(const Eigen::Vector3d& position, const Eigen::Matrix3d& rotation_matrix);
 static visualization_msgs::Marker createFingerMarker(const Eigen::Vector3d& center, const Eigen::Matrix3d& frame, const Eigen::Vector3d& lwh, int id, const std::string& frame_id);
 static visualization_msgs::Marker createHandBaseMarker(const Eigen::Vector3d& start, const Eigen::Vector3d& end, const Eigen::Matrix3d& frame, double length, double height, int id, const std::string& frame_id);
 
@@ -90,32 +90,29 @@ static void grabObject(ros::NodeHandle& n, FrankaPanda& panda)
     return lhs.score.data > rhs.score.data;
   });
 
+  Eigen::Vector3d position, approach, binormal, axis, direction;
+  Eigen::Matrix3d rotation_matrix;
+  Eigen::Quaterniond rotation_quaternion;
   for (const gpd_ros::GraspConfig& grasp : grasps) {
+    tf::pointMsgToEigen(grasp.position, position);
+    tf::vectorMsgToEigen(grasp.approach, approach);
+    tf::vectorMsgToEigen(grasp.binormal, binormal);
+    tf::vectorMsgToEigen(grasp.axis, axis);
+  
+    rotation_matrix.col(0) = approach;
+    rotation_matrix.col(1) = binormal;
+    rotation_matrix.col(2) = axis;
 
-    pub_grasp.publish(createGraspMarkers(grasp));
+    pub_grasp.publish(createGraspMarkers(position, rotation_matrix));
 
-    Eigen::Matrix3f r;
-    r(0, 0) = grasp.approach.x;
-    r(1, 0) = grasp.approach.y;
-    r(2, 0) = grasp.approach.z;
-    r(0, 1) = grasp.binormal.x;
-    r(1, 1) = grasp.binormal.y;
-    r(2, 1) = grasp.binormal.z;
-    r(0, 2) = grasp.axis.x;
-    r(1, 2) = grasp.axis.y;
-    r(2, 2) = grasp.axis.z;
+    // rotation_quaternion = rotation_matrix * Eigen::AngleAxisd(M_PI_2, Eigen::Vector3d::UnitY()) * Eigen::AngleAxisd(M_PI_4, Eigen::Vector3d::UnitZ());
+    rotation_matrix = rotation_matrix * Eigen::AngleAxisd(M_PI_2, Eigen::Vector3d::UnitY()) * Eigen::AngleAxisd(M_PI_4, Eigen::Vector3d::UnitZ());
 
-    // Eigen::AngleAxisf aa = Eigen::AngleAxisf(M_PI/8, Eigen::Vector3f::UnitZ());
-    // Eigen::Quaternionf q = Eigen::Quaternionf(Eigen::AngleAxisf(r)) * Eigen::Quaternionf(aa);
-
-    // Eigen::AngleAxisf aa = Eigen::AngleAxisf(-M_PI_2, Eigen::Vector3f::UnitY());
-    Eigen::Quaternionf q = Eigen::Quaternionf(r) * Eigen::AngleAxisf(M_PI_2, Eigen::Vector3f::UnitY()) * Eigen::AngleAxisf(M_PI_4, Eigen::Vector3f::UnitZ());
-
-    // Eigen::Quaternionf q(r);
+    direction = rotation_matrix.col(2);
 
     geometry_msgs::Pose target_pose;
-    tf::quaternionEigenToMsg(q.cast<double>(), target_pose.orientation);
-    target_pose.position = grasp.position;
+    tf::pointEigenToMsg(position, target_pose.position);
+    tf::quaternionEigenToMsg(Eigen::Quaterniond(rotation_matrix), target_pose.orientation); 
 
     MoveGroupInterface::Plan plan;
     if(!panda.planHandMotion("open", plan)) {
@@ -208,47 +205,37 @@ static void grabObject(ros::NodeHandle& n, FrankaPanda& panda)
   // panda.executeHandMotion(plan, 0.4);
 }
 
-static visualization_msgs::MarkerArray createGraspMarkers(const gpd_ros::GraspConfig& grasp)
+static visualization_msgs::MarkerArray createGraspMarkers(const Eigen::Vector3d& position, const Eigen::Matrix3d& rotation_matrix)
 {
   constexpr double hand_depth = 0.06;
   constexpr double hand_height = 0.02;
   constexpr double outer_diameter = 0.12;
   constexpr double finger_width = 0.01;
 
-  constexpr double hw = 0.5 * outer_diameter - 0.5 * finger_width;
+  constexpr double hw = 0.5*outer_diameter - 0.5*finger_width;
+
+  const Eigen::Vector3d approach = rotation_matrix.col(0);
+  const Eigen::Vector3d binormal = rotation_matrix.col(1);
+  const Eigen::Vector3d axis = rotation_matrix.col(2);
+
+  const Eigen::Vector3d left_bottom = position - hw * binormal;
+  const Eigen::Vector3d right_bottom = position + hw * binormal;
+  const Eigen::Vector3d left_top = left_bottom + hand_depth * approach;
+  const Eigen::Vector3d right_top = right_bottom + hand_depth * approach;
+  const Eigen::Vector3d left_center = left_bottom + 0.5*(left_top - left_bottom);
+  const Eigen::Vector3d right_center = right_bottom + 0.5*(right_top - right_bottom);
+  const Eigen::Vector3d base_center = left_bottom + 0.5*(right_bottom - left_bottom) - 0.01*approach;
+  const Eigen::Vector3d approach_center = base_center - 0.04*approach;
+
+  const Eigen::Vector3d finger_lwh(hand_depth, finger_width, hand_height);
+  const Eigen::Vector3d approach_lwh(0.08, finger_width, hand_height);
+
+  const visualization_msgs::Marker base = createHandBaseMarker(left_bottom, right_bottom, rotation_matrix, 0.02, hand_height, 1, "world");
+  const visualization_msgs::Marker left_finger = createFingerMarker(left_center, rotation_matrix, finger_lwh, 1*3, "world");
+  const visualization_msgs::Marker right_finger = createFingerMarker(right_center, rotation_matrix, finger_lwh, 1*3+1, "world");
+  const visualization_msgs::Marker appr = createFingerMarker(approach_center, rotation_matrix, approach_lwh, 1*3+2, "world");
 
   visualization_msgs::MarkerArray marker_array;
-  visualization_msgs::Marker left_finger, right_finger, base, appr;
-  Eigen::Vector3d left_bottom, right_bottom, left_top, right_top, left_center, right_center, approach_center, base_center, position, approach, binormal, axis;
-  Eigen::Matrix3d orientation;
-
-  tf::pointMsgToEigen(grasp.position, position);
-  tf::vectorMsgToEigen(grasp.approach, approach);
-  tf::vectorMsgToEigen(grasp.binormal, binormal);
-  tf::vectorMsgToEigen(grasp.axis, axis);
-
-  orientation.col(0) = approach;
-  orientation.col(1) = binormal;
-  orientation.col(2) = axis;
-
-  left_bottom = position - hw * binormal;
-  right_bottom = position + hw * binormal;
-  left_top = left_bottom + hand_depth * approach;
-  right_top = right_bottom + hand_depth * approach;
-  left_center = left_bottom + 0.5*(left_top - left_bottom);
-  right_center = right_bottom + 0.5*(right_top - right_bottom);
-  base_center = left_bottom + 0.5*(right_bottom - left_bottom) - 0.01*approach;
-  approach_center = base_center - 0.04*approach;
-
-  Eigen::Vector3d finger_lwh, approach_lwh;
-  finger_lwh << hand_depth, finger_width, hand_height;
-  approach_lwh << 0.08, finger_width, hand_height;
-
-  base = createHandBaseMarker(left_bottom, right_bottom, orientation, 0.02, hand_height, 1, "world");
-  left_finger = createFingerMarker(left_center, orientation, finger_lwh, 1*3, "world");
-  right_finger = createFingerMarker(right_center, orientation, finger_lwh, 1*3+1, "world");
-  appr = createFingerMarker(approach_center, orientation, approach_lwh, 1*3+2, "world");
-
   marker_array.markers.push_back(left_finger);
   marker_array.markers.push_back(right_finger);
   marker_array.markers.push_back(appr);
