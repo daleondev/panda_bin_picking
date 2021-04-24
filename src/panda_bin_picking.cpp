@@ -82,10 +82,8 @@ static void grabObject(ros::NodeHandle& n, FrankaPanda& panda)
   ros::Publisher pub_grasp = n.advertise<visualization_msgs::MarkerArray>("/grasp", 1);
 
   gpd_ros::GraspConfigList::ConstPtr grasp_configs = ros::topic::waitForMessage<gpd_ros::GraspConfigList>(GRASPS_TOPIC);
-  ROS_INFO("Received %i grasps", grasp_configs->grasps.size());
 
-  auto grasps = grasp_configs->grasps;
-
+  std::vector<gpd_ros::GraspConfig> grasps = grasp_configs->grasps;
   std::sort(grasps.begin(), grasps.end(), [](gpd_ros::GraspConfig lhs, gpd_ros::GraspConfig rhs) -> bool {
     return lhs.score.data > rhs.score.data;
   });
@@ -99,16 +97,16 @@ static void grabObject(ros::NodeHandle& n, FrankaPanda& panda)
     tf::vectorMsgToEigen(grasp.binormal, binormal);
     tf::vectorMsgToEigen(grasp.axis, axis);
   
-    rotation_matrix.col(0) = approach;
-    rotation_matrix.col(1) = binormal;
-    rotation_matrix.col(2) = axis;
+    rotation_matrix.col(0) = axis;
+    rotation_matrix.col(1) = -binormal;
+    rotation_matrix.col(2) = approach;
 
     pub_grasp.publish(createGraspMarkers(position, rotation_matrix));
 
-    // rotation_quaternion = rotation_matrix * Eigen::AngleAxisd(M_PI_2, Eigen::Vector3d::UnitY()) * Eigen::AngleAxisd(M_PI_4, Eigen::Vector3d::UnitZ());
-    rotation_matrix = rotation_matrix * Eigen::AngleAxisd(M_PI_2, Eigen::Vector3d::UnitY()) * Eigen::AngleAxisd(M_PI_4, Eigen::Vector3d::UnitZ());
+    rotation_matrix = rotation_matrix * Eigen::AngleAxisd(M_PI_4, Eigen::Vector3d::UnitZ());
 
     direction = rotation_matrix.col(2);
+    position += -0.08*direction.normalized();
 
     geometry_msgs::Pose target_pose;
     tf::pointEigenToMsg(position, target_pose.position);
@@ -135,74 +133,6 @@ static void grabObject(ros::NodeHandle& n, FrankaPanda& panda)
 
     break;
   }
-  
-  // gpd_ros::GraspConfig optimal_grasp;
-  // float highscore = FLOAT_MIN;
-  // for (auto grasp : grasps->grasps) {
-  //   if (grasp.score.data > highscore) {
-  //     optimal_grasp = grasp;
-  //     highscore = grasp.score.data;
-  //   }
-  // }
-
-  // if (highscore == FLOAT_MIN) {
-  //   error("no fitting grasp pose found");
-  // }
-
-  // float maxZ = FLOAT_MIN;
-  // for (auto grasp : grasps->grasps) {
-  //   if (grasp.position.z > maxZ) {
-  //     optimal_grasp = grasp;
-  //     maxZ = grasp.position.z;
-  //   }
-  // }
-
-  // if (maxZ == FLOAT_MIN) {
-  //   error("no fitting grasp pose found");
-  // }
-  
-  // Eigen::Vector3d x, y, z;
-  // tf::vectorMsgToEigen(optimal_grasp.approach, x);
-  // tf::vectorMsgToEigen(optimal_grasp.binormal, y);
-  // tf::vectorMsgToEigen(optimal_grasp.axis, z);
-
-  // Eigen::Matrix3f r;
-  // // r.col(0) = x.cast<float>();
-  // // r.col(1) = y.cast<float>();
-  // // r.col(2) = z.cast<float>();
-  // r(0, 0) = optimal_grasp.approach.x;
-  // r(1, 0) = optimal_grasp.approach.y;
-  // r(2, 0) = optimal_grasp.approach.z;
-  // r(0, 1) = optimal_grasp.binormal.x;
-  // r(1, 1) = optimal_grasp.binormal.y;
-  // r(2, 1) = optimal_grasp.binormal.z;
-  // r(0, 2) = optimal_grasp.axis.x;
-  // r(1, 2) = optimal_grasp.axis.y;
-  // r(2, 2) = optimal_grasp.axis.z;
-
-  // Eigen::AngleAxisf aa = Eigen::AngleAxisf(M_PI/8, Eigen::Vector3f::UnitZ());
-
-  // Eigen::Quaternionf q = Eigen::Quaternionf(Eigen::AngleAxisf(r)) * Eigen::Quaternionf(aa);
-
-  // geometry_msgs::Pose target_pose;
-  // tf::quaternionEigenToMsg(q.cast<double>(), target_pose.orientation);
-  // target_pose.position = optimal_grasp.position;
-
-  // MoveGroupInterface::Plan plan;
-  // if(!panda.planHandMotion("open", plan)) {
-  //   error("error while planning");
-  // }
-  // panda.executeHandMotion(plan);
-
-  // if(!panda.planArmMotion(target_pose, plan)) {
-  //   error("error while planning");
-  // }
-  // panda.executeArmMotion(plan, 0.2);
-
-  // if(!panda.planHandMotion("close", plan)) {
-  //   error("error while planning");
-  // }
-  // panda.executeHandMotion(plan, 0.4);
 }
 
 static visualization_msgs::MarkerArray createGraspMarkers(const Eigen::Vector3d& position, const Eigen::Matrix3d& rotation_matrix)
@@ -214,9 +144,9 @@ static visualization_msgs::MarkerArray createGraspMarkers(const Eigen::Vector3d&
 
   constexpr double hw = 0.5*outer_diameter - 0.5*finger_width;
 
-  const Eigen::Vector3d approach = rotation_matrix.col(0);
-  const Eigen::Vector3d binormal = rotation_matrix.col(1);
-  const Eigen::Vector3d axis = rotation_matrix.col(2);
+  const Eigen::Vector3d approach = rotation_matrix.col(2);
+  const Eigen::Vector3d binormal = -rotation_matrix.col(1);
+  const Eigen::Vector3d axis = rotation_matrix.col(0);
 
   const Eigen::Vector3d left_bottom = position - hw * binormal;
   const Eigen::Vector3d right_bottom = position + hw * binormal;
@@ -253,27 +183,14 @@ static visualization_msgs::Marker createFingerMarker(const Eigen::Vector3d& cent
   marker.id = id;
   marker.type = visualization_msgs::Marker::CUBE;
   marker.action = visualization_msgs::Marker::ADD;
-  marker.pose.position.x = center(0);
-  marker.pose.position.y = center(1);
-  marker.pose.position.z = center(2);
-  marker.lifetime = ros::Duration(10);
 
-  // use orientation of hand frame
-  Eigen::Quaterniond quat(frame);
-  marker.pose.orientation.x = quat.x();
-  marker.pose.orientation.y = quat.y();
-  marker.pose.orientation.z = quat.z();
-  marker.pose.orientation.w = quat.w();
+  tf::pointEigenToMsg(center, marker.pose.position);
+  tf::quaternionEigenToMsg(Eigen::Quaterniond(frame), marker.pose.orientation);
 
   // these scales are relative to the hand frame (unit: meters)
   marker.scale.x = lwh(0); // forward direction
   marker.scale.y = lwh(1); // hand closing direction
   marker.scale.z = lwh(2); // hand vertical direction
-
-  marker.color.a = 0.5;
-  marker.color.r = 0.0;
-  marker.color.g = 0.0;
-  marker.color.b = 0.5;
 
   return marker;
 }
@@ -290,27 +207,14 @@ static visualization_msgs::Marker createHandBaseMarker(const Eigen::Vector3d& st
   marker.id = id;
   marker.type = visualization_msgs::Marker::CUBE;
   marker.action = visualization_msgs::Marker::ADD;
-  marker.pose.position.x = center(0);
-  marker.pose.position.y = center(1);
-  marker.pose.position.z = center(2);
-  marker.lifetime = ros::Duration(10);
 
-  // use orientation of hand frame
-  Eigen::Quaterniond quat(frame);
-  marker.pose.orientation.x = quat.x();
-  marker.pose.orientation.y = quat.y();
-  marker.pose.orientation.z = quat.z();
-  marker.pose.orientation.w = quat.w();
+  tf::pointEigenToMsg(center, marker.pose.position);
+  tf::quaternionEigenToMsg(Eigen::Quaterniond(frame), marker.pose.orientation);
 
   // these scales are relative to the hand frame (unit: meters)
   marker.scale.x = length; // forward direction
   marker.scale.y = (end - start).norm(); // hand closing direction
   marker.scale.z = height; // hand vertical direction
-
-  marker.color.a = 0.5;
-  marker.color.r = 0.0;
-  marker.color.g = 0.0;
-  marker.color.b = 1.0;
 
   return marker;
 }

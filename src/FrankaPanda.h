@@ -1,6 +1,8 @@
 #include <moveit/move_group_interface/move_group_interface.h>
 #include <moveit/robot_model_loader/robot_model_loader.h>
 
+#include <moveit/planning_scene_interface/planning_scene_interface.h>
+
 #include <tf/transform_datatypes.h>
 #include <tf/transform_listener.h>
 
@@ -40,6 +42,7 @@ private:
     RobotModelLoader robot_model_loader_;
     RobotModelPtr robot_model_;
     RobotStatePtr robot_state_;
+
     RealsenseL515 realsense_;
 
     const std::string WORLD_FRAME = "/world";

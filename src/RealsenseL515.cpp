@@ -35,7 +35,7 @@ sensor_msgs::PointCloud2 RealsenseL515::getPointcloud(const tf::StampedTransform
     if (transform) {
         pcl::PointCloud<pcl::PointXYZ>::Ptr pc(new pcl::PointCloud<pcl::PointXYZ>());
         pcl_ros::transformPointCloud(*pc_, *pc, *transform);
-        pcl::toROSMsg(*pc, pc_msg);
+        pcl::toROSMsg(*pc, pc_msg);       
     } else {
         pcl::toROSMsg(*pc_, pc_msg);
     }
