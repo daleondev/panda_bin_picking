@@ -13,17 +13,17 @@ void Visualizer::init(ros::NodeHandle& n)
     pub_vis_ = n.advertise<visualization_msgs::MarkerArray>("/panda_bin_picking/visualization", 1);
 }
 
-void Visualizer::showAxes(const Eigen::Vector3d& position, const Eigen::Matrix3d& rotation_matrix)
+void Visualizer::plotPose(const Eigen::Vector3d& position, const Eigen::Matrix3d& rotation_matrix)
 {
-    pub_vis_.publish(createAxesMarkers(position, rotation_matrix));
+    pub_vis_.publish(createPoseMarkers(position, rotation_matrix));
 }
 
-void Visualizer::showGrasp(const Eigen::Vector3d& position, const Eigen::Matrix3d& rotation_matrix, const HandGeometry& hand_geometry)
+void Visualizer::plotGrasp(const Eigen::Vector3d& position, const Eigen::Matrix3d& rotation_matrix, const HandGeometry& hand_geometry)
 {
     pub_vis_.publish(createGraspMarkers(position, rotation_matrix, hand_geometry));
 }
 
-visualization_msgs::MarkerArray Visualizer::createAxesMarkers(const Eigen::Vector3d& position, const Eigen::Matrix3d& rotation_matrix)
+visualization_msgs::MarkerArray Visualizer::createPoseMarkers(const Eigen::Vector3d& position, const Eigen::Matrix3d& rotation_matrix)
 {
     const visualization_msgs::Marker x = createAxisMarker(position, rotation_matrix.col(0), COLOR_RED, 5, "world");
     const visualization_msgs::Marker y = createAxisMarker(position, rotation_matrix.col(1), COLOR_GREEN, 6, "world");

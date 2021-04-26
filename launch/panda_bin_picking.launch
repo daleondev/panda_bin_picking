@@ -2,7 +2,7 @@
   <node name="detect_grasps" pkg="gpd_ros" type="detect_grasps" output="screen">
     <param name="cloud_type" value="0" /> <!-- 0: PointCloud2, 1: CloudIndexed, 2: CloudSamples -->
     <param name="cloud_topic" value="/panda_bin_picking/cloud_stitched" />
-    <param name="config_file" value="/home/david/ros_builds/gpd/cfg/ros_eigen_params.cfg" />
+    <param name="config_file" value="$(find panda_bin_picking)/config/gpd_params.cfg" />
     <param name="rviz_topic" value="plot_grasps" />
   </node>
 

@@ -37,7 +37,7 @@ FrankaPanda::FrankaPanda(ros::NodeHandle& n)
 
 FrankaPanda::~FrankaPanda() = default;
 
-bool FrankaPanda::detect(graspConfigList& out_grasps)
+bool FrankaPanda::detect(GraspConfigList& out_grasps)
 {
     if (!captureAndStitchRealsensePointclouds()) {
         ROS_ERROR("Failed to capture and stitch pointclouds");
@@ -51,7 +51,7 @@ bool FrankaPanda::detect(graspConfigList& out_grasps)
     return true;
 }
 
-bool FrankaPanda::pick(graspConfigList& grasps)
+bool FrankaPanda::pick(GraspConfigList& grasps)
 {
     std::sort(grasps.begin(), grasps.end(), [](gpd_ros::GraspConfig lhs, gpd_ros::GraspConfig rhs) -> bool {
         return lhs.score.data > rhs.score.data;
@@ -78,7 +78,7 @@ bool FrankaPanda::captureAndStitchRealsensePointclouds()
 
     MoveGroupInterface::Plan plan;
 
-    JointList target_joints = {-3*M_PI/4.0, 0.0, 0.0, -M_PI_2, M_PI_4, M_PI_2, M_PI_4};
+    JointList target_joints = {-3*M_PI_4, 0.0, 0.0, -M_PI_2, M_PI_4, M_PI_2, M_PI_4};
     if(!planArmMotion(target_joints, plan)) {
         ROS_ERROR("Failed to plan motion for arm");
         return false;
@@ -87,7 +87,7 @@ bool FrankaPanda::captureAndStitchRealsensePointclouds()
     captureRealsensePointcloud();
     pub_current_.publish(realsensePointcloudMessage());  
 
-    target_joints = {-M_PI/4.0, 0.0, 0.0, -M_PI_2, -M_PI_4, M_PI_2, M_PI_4};
+    target_joints = {-M_PI_4, 0.0, 0.0, -M_PI_2, -M_PI_4, M_PI_2, M_PI_4};
     if(!planArmMotion(target_joints, plan)) {
         ROS_ERROR("Failed to plan motion for arm");
         return false;
@@ -112,7 +112,7 @@ bool FrankaPanda::captureAndStitchRealsensePointclouds()
 bool FrankaPanda::tryPoses(const PoseList& poses)
 {
     for (const Pose6D& pose : poses) {
-        Visualizer::showGrasp(pose.position + HAND_GEOMETRY.depth * pose.rotation_matrix.col(2).normalized(), pose.rotation_matrix * Eigen::AngleAxisd(-M_PI_4, Eigen::Vector3d::UnitZ()), HAND_GEOMETRY);
+        Visualizer::plotGrasp(pose.position + HAND_GEOMETRY.depth * pose.rotation_matrix.col(2).normalized(), pose.rotation_matrix * Eigen::AngleAxisd(-M_PI_4, Eigen::Vector3d::UnitZ()), HAND_GEOMETRY);
 
         if (!approachPose(pose)) {
             ROS_WARN("Failed to approach pose");
@@ -146,7 +146,7 @@ bool FrankaPanda::approachPose(const Pose6D& pose)
     const Eigen::Vector3d direction = target_pose.rotation_matrix.col(2);
     target_pose.position += -0.04*direction.normalized();
 
-    Visualizer::showAxes(target_pose.position, target_pose.rotation_matrix);
+    Visualizer::plotPose(target_pose.position, target_pose.rotation_matrix);
 
     MoveGroupInterface::Plan plan;
     if (!planArmMotion(target_pose, plan)) {
@@ -160,7 +160,7 @@ bool FrankaPanda::approachPose(const Pose6D& pose)
 bool FrankaPanda::moveToPose(const Pose6D& pose)
 {
     const Eigen::Vector3d direction = pose.rotation_matrix.col(2);
-    Visualizer::showAxes(pose.position + TCP_OFFSET * direction.normalized(), pose.rotation_matrix);
+    Visualizer::plotPose(pose.position + TCP_OFFSET * direction.normalized(), pose.rotation_matrix);
 
     MoveGroupInterface::Plan plan;
     if (!planArmMotion(pose, plan)) {

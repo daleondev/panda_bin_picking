@@ -19,6 +19,6 @@ struct HandGeometry {
     double finger_width;
 };
 
-typedef std::vector<gpd_ros::GraspConfig> graspConfigList;
+typedef std::vector<gpd_ros::GraspConfig> GraspConfigList;
 typedef std::vector<double> JointList;
 typedef std::vector<Pose6D> PoseList;

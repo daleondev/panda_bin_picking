@@ -28,18 +28,12 @@ catkin_package(
 )
 
 include_directories(
+  include
   ${catkin_INCLUDE_DIRS}
   ${Boost_INCLUDE_DIR}
   ${EIGEN3_INCLUDE_DIRS}
   ${PCL_INCLUDE_DIRS}
 )
-
-# add_executable(path_planning_node src/path_planning_node.cpp)
-
-# target_link_libraries(path_planning_node
-#   ${catkin_LIBRARIES}
-#   ${Boost_LIBRARIES}
-# )
 
 add_executable(panda_bin_picking src/panda_bin_picking.cpp src/FrankaPanda.cpp src/RealsenseL515.cpp src/Visualizer.cpp)
 add_dependencies(panda_bin_picking ${catkin_EXPORTED_TARGETS})

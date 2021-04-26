@@ -21,8 +21,8 @@ public:
     FrankaPanda(ros::NodeHandle& n);
     ~FrankaPanda();
 
-    bool detect(graspConfigList& out_grasps);
-    bool pick(graspConfigList& grasps);
+    bool detect(GraspConfigList& out_grasps);
+    bool pick(GraspConfigList& grasps);
     
     bool getTransform(const std::string& target_frame, const std::string& source_frame, tf::StampedTransform& out_transform) const;
     

@@ -3,7 +3,7 @@
 
 #include <ros/ros.h>
 
-#define NODE_NAME             "panda_bin_picking"
+#define NODE_NAME "panda_bin_picking"
 
 static void error(const char* msg);
 
@@ -17,7 +17,7 @@ int main(int argc, char **argv)
   Visualizer::init(n);
   FrankaPanda panda(n);
   
-  graspConfigList grasps;
+  GraspConfigList grasps;
   if(!panda.detect(grasps)) {
     error("detection failed");
   }
