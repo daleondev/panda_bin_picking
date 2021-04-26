@@ -26,6 +26,8 @@
   <build_depend>libpcl-all-dev</build_depend>
   <build_depend>gpd_ros</build_depend>
   <build_depend>eigen</build_depend>
+  <build_depend>std_msgs</build_depend>
+  <build_depend>std_srvs</build_depend>
 
   <exec_depend>roscpp</exec_depend>
   <exec_depend>roscpp</exec_depend>
@@ -44,5 +46,7 @@
   <exec_depend>libpcl-all</exec_depend>
   <exec_depend>gpd_ros</exec_depend>
   <exec_depend>eigen</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>std_srvs</exec_depend>
 
 </package>

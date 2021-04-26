@@ -12,6 +12,8 @@ find_package(catkin REQUIRED COMPONENTS
   tf2_eigen
   tf2_geometry_msgs
   gpd_ros
+  std_msgs
+  std_srvs
 )
 
 find_package(Eigen3 REQUIRED)
@@ -19,7 +21,7 @@ find_package(PCL REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system filesystem date_time thread)
 
 catkin_package(
-  CATKIN_DEPENDS roscpp moveit_core moveit_visual_tools moveit_ros_planning_interface tf2_geometry_msgs sensor_msgs pcl pcl_conversions pcl_ros 
+  CATKIN_DEPENDS roscpp moveit_core moveit_visual_tools moveit_ros_planning_interface tf2_geometry_msgs sensor_msgs pcl pcl_conversions pcl_ros std_msgs std_srvs
   DEPENDS EIGEN3
 )
 
@@ -37,7 +39,7 @@ include_directories(
 #   ${Boost_LIBRARIES}
 # )
 
-add_executable(panda_bin_picking src/panda_bin_picking.cpp src/FrankaPanda.cpp src/RealsenseL515.cpp)
+add_executable(panda_bin_picking src/panda_bin_picking.cpp src/FrankaPanda.cpp src/RealsenseL515.cpp src/Visualizer.cpp)
 add_dependencies(panda_bin_picking ${catkin_EXPORTED_TARGETS})
 target_link_libraries(panda_bin_picking
   ${catkin_LIBRARIES}
