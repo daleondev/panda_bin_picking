@@ -1,3 +1,5 @@
+#pragma once
+
 #include "custom_types.h"
 
 #include <ros/ros.h>
