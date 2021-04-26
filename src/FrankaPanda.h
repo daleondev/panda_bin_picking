@@ -1,3 +1,5 @@
+#pragma once
+
 #include "RealsenseL515.h"
 #include "custom_types.h"
 
