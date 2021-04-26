@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.0.2)
 project(panda_bin_picking)
 
+set(CMAKE_CXX_STANDARD 14)
+
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   moveit_core

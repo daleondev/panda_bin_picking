@@ -6,6 +6,9 @@
 #include <pcl/registration/icp.h>
 #include <pcl_conversions/pcl_conversions.h>
 
+const std::string RealsenseL515::DEPTH_FRAME =  "/camera_depth_optical_frame";
+const std::string RealsenseL515::PC_TOPIC =     "/realsense/depth/points";
+
 RealsenseL515::RealsenseL515()
 : pc_{ new pcl::PointCloud<pcl::PointXYZ>() }
 {
@@ -23,7 +26,7 @@ void RealsenseL515::capture(const tf::StampedTransform& transform)
     pcl_ros::transformPointCloud(*pc, *pc, transform);
 
     filterPointcloud(pc);
-    thinOutPointcloud(0.01f, 0.01f, 0.01f, pc);
+    // thinOutPointcloud(0.01f, 0.01f, 0.01f, pc);
 
     *pc_ += *pc;
 }
@@ -58,8 +61,7 @@ void RealsenseL515::filterPointcloud(pcl::PointCloud<pcl::PointXYZ>::Ptr pc) con
     pcl::PointIndices::Ptr to_remove(new pcl::PointIndices());
     pcl::ExtractIndices<pcl::PointXYZ> extract;
 
-    for (int i = 0; i < pc->size(); i++)
-    {
+    for (int i = 0; i < pc->size(); i++) {
         if (pc->points[i].z < -0.5 || !std::isfinite(pc->points[i].x) || !std::isfinite(pc->points[i].y) || !std::isfinite(pc->points[i].z)) {
             to_remove->indices.push_back(i);
         }

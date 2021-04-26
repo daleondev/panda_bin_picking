@@ -2,9 +2,9 @@
 
 #include <eigen_conversions/eigen_msg.h>
 
-#define COLOR_RED   Eigen::Vector4f(1.0, 0.0, 0.0, 1.0)
-#define COLOR_GREEN Eigen::Vector4f(0.0, 1.0, 0.0, 1.0)
-#define COLOR_BLUE  Eigen::Vector4f(0.0, 0.0, 1.0, 1.0)
+#define COLOR_RED   Eigen::Vector4f(1.0, 0.0, 0.0, 0.5)
+#define COLOR_GREEN Eigen::Vector4f(0.0, 1.0, 0.0, 0.5)
+#define COLOR_BLUE  Eigen::Vector4f(0.0, 0.0, 1.0, 0.5)
 
 ros::Publisher Visualizer::pub_vis_;
 
@@ -18,9 +18,9 @@ void Visualizer::showAxes(const Eigen::Vector3d& position, const Eigen::Matrix3d
     pub_vis_.publish(createAxesMarkers(position, rotation_matrix));
 }
 
-void Visualizer::showGrasp(const Eigen::Vector3d& position, const Eigen::Matrix3d& rotation_matrix)
+void Visualizer::showGrasp(const Eigen::Vector3d& position, const Eigen::Matrix3d& rotation_matrix, const HandGeometry& hand_geometry)
 {
-    pub_vis_.publish(createGraspMarkers(position, rotation_matrix));
+    pub_vis_.publish(createGraspMarkers(position, rotation_matrix, hand_geometry));
 }
 
 visualization_msgs::MarkerArray Visualizer::createAxesMarkers(const Eigen::Vector3d& position, const Eigen::Matrix3d& rotation_matrix)
@@ -54,7 +54,7 @@ visualization_msgs::Marker Visualizer::createAxisMarker(const Eigen::Vector3d& o
     tf::quaternionEigenToMsg(Eigen::Quaterniond(Eigen::Matrix3d::Identity()), marker.pose.orientation);
 
     marker.scale.x = 0.01f;
-    marker.scale.y = 0.01f;
+    marker.scale.y = 0.02f;
     marker.scale.z = 0.02f;
     
     marker.color.r = color[0];
@@ -65,38 +65,35 @@ visualization_msgs::Marker Visualizer::createAxisMarker(const Eigen::Vector3d& o
     return marker;
 }
 
-visualization_msgs::MarkerArray Visualizer::createGraspMarkers(const Eigen::Vector3d& position, const Eigen::Matrix3d& rotation_matrix)
+visualization_msgs::MarkerArray Visualizer::createGraspMarkers(const Eigen::Vector3d& position, const Eigen::Matrix3d& rotation_matrix, const HandGeometry& hand_geometry)
 {
-    //---------
-    // ToDo: In FrankaPanda 
-    constexpr double hand_depth = 0.06;
-    constexpr double hand_height = 0.02;
-    constexpr double outer_diameter = 0.12;
-    constexpr double finger_width = 0.01;
-
-    constexpr double hw = 0.5*outer_diameter - 0.5*finger_width;
-    //---------
-
+    const double hw = 0.5*hand_geometry.outer_diameter - 0.5*hand_geometry.finger_width;
+    
     const Eigen::Vector3d approach = rotation_matrix.col(2);
     const Eigen::Vector3d binormal = -rotation_matrix.col(1);
     const Eigen::Vector3d axis = rotation_matrix.col(0);
 
     const Eigen::Vector3d left_bottom = position - hw * binormal;
     const Eigen::Vector3d right_bottom = position + hw * binormal;
-    const Eigen::Vector3d left_top = left_bottom + hand_depth * approach;
-    const Eigen::Vector3d right_top = right_bottom + hand_depth * approach;
+    const Eigen::Vector3d left_top = left_bottom + hand_geometry.depth * approach;
+    const Eigen::Vector3d right_top = right_bottom + hand_geometry.depth * approach;
     const Eigen::Vector3d left_center = left_bottom + 0.5*(left_top - left_bottom);
     const Eigen::Vector3d right_center = right_bottom + 0.5*(right_top - right_bottom);
     const Eigen::Vector3d base_center = left_bottom + 0.5*(right_bottom - left_bottom) - 0.01*approach;
     const Eigen::Vector3d approach_center = base_center - 0.04*approach;
 
-    const Eigen::Vector3d finger_lwh(hand_depth, finger_width, hand_height);
-    const Eigen::Vector3d approach_lwh(0.08, finger_width, hand_height);
+    const Eigen::Vector3d finger_lwh(hand_geometry.depth, hand_geometry.finger_width, hand_geometry.height);
+    const Eigen::Vector3d approach_lwh(0.08, hand_geometry.finger_width, hand_geometry.height);
 
-    const visualization_msgs::Marker base = createHandBaseMarker(left_bottom, right_bottom, rotation_matrix, 0.02, hand_height, 1, "world");
-    const visualization_msgs::Marker left_finger = createFingerMarker(left_center, rotation_matrix, finger_lwh, 2, "world");
-    const visualization_msgs::Marker right_finger = createFingerMarker(right_center, rotation_matrix, finger_lwh, 3, "world");
-    const visualization_msgs::Marker appr = createFingerMarker(approach_center, rotation_matrix, approach_lwh, 4, "world");
+    Eigen::Matrix3d rotation_mod;
+    rotation_mod.col(0) = approach;
+    rotation_mod.col(1) = binormal;
+    rotation_mod.col(2) = axis;
+
+    const visualization_msgs::Marker base = createHandBaseMarker(left_bottom, right_bottom, rotation_mod, 0.02, hand_geometry.height, 1, "world");
+    const visualization_msgs::Marker left_finger = createFingerMarker(left_center, rotation_mod, finger_lwh, 2, "world");
+    const visualization_msgs::Marker right_finger = createFingerMarker(right_center, rotation_mod, finger_lwh, 3, "world");
+    const visualization_msgs::Marker appr = createFingerMarker(approach_center, rotation_mod, approach_lwh, 4, "world");
 
     visualization_msgs::MarkerArray marker_array;
     marker_array.markers.push_back(left_finger);
@@ -122,11 +119,11 @@ visualization_msgs::Marker Visualizer::createFingerMarker(const Eigen::Vector3d&
     marker.scale.x = lwh(0);
     marker.scale.y = lwh(1);
     marker.scale.z = lwh(2);
-
-    marker.color.a = 0.5;
+    
     marker.color.r = 0.5;
     marker.color.g = 0.0;
-    marker.color.b = 0.5;
+    marker.color.b = 0.9;
+    marker.color.a = 0.9;
 
     return marker;
 }
@@ -148,11 +145,11 @@ visualization_msgs::Marker Visualizer::createHandBaseMarker(const Eigen::Vector3
     marker.scale.x = length;
     marker.scale.y = (end - start).norm();
     marker.scale.z = height;
-
-    marker.color.a = 0.5;
+ 
     marker.color.r = 0.5;
     marker.color.g = 0.0;
-    marker.color.b = 0.5;
+    marker.color.b = 0.9;
+    marker.color.a = 0.9;
 
     return marker;
 }

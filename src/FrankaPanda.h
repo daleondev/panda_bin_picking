@@ -1,4 +1,5 @@
 #include "RealsenseL515.h"
+#include "custom_types.h"
 
 #include <moveit/move_group_interface/move_group_interface.h>
 #include <moveit/robot_model_loader/robot_model_loader.h>
@@ -12,18 +13,6 @@
 
 using moveit::planning_interface::MoveItErrorCode;
 using moveit::planning_interface::MoveGroupInterface;
-using robot_model_loader::RobotModelLoader;
-using robot_model::RobotModelPtr;
-using robot_state::RobotStatePtr;
-
-struct Pose6D {
-    Eigen::Vector3d position;
-    Eigen::Matrix3d rotation_matrix;
-};
-
-typedef std::vector<gpd_ros::GraspConfig> graspConfigList;
-typedef std::vector<double> jointList;
-typedef std::vector<Pose6D> poseList;
 
 class FrankaPanda {
 public:
@@ -43,7 +32,7 @@ private:
     void saveRealsensePointcloud() const;
     
     // Picking
-    bool tryPoses(const poseList& poses);
+    bool tryPoses(const PoseList& poses);
     bool approachPose(const Pose6D& pose);
     bool moveToPose(const Pose6D& pose);
     bool openHand();
@@ -51,10 +40,10 @@ private:
     Pose6D graspConfigToPose6D(const gpd_ros::GraspConfig& grasp);
 
     // Planning
-    bool planArmMotion(const jointList& target_joints, MoveGroupInterface::Plan& out_plan);
+    bool planArmMotion(const JointList& target_joints, MoveGroupInterface::Plan& out_plan);
     bool planArmMotion(const Pose6D& target_pose, MoveGroupInterface::Plan& out_plan);
     bool planArmMotion(const std::string& name, MoveGroupInterface::Plan& out_plan);
-    bool planHandMotion(const jointList& target_joints, MoveGroupInterface::Plan& out_plan);
+    bool planHandMotion(const JointList& target_joints, MoveGroupInterface::Plan& out_plan);
     bool planHandMotion(const std::string& name, MoveGroupInterface::Plan& out_plan);
 
     // Moving
@@ -63,21 +52,24 @@ private:
 
     MoveGroupInterface move_group_arm_;
     MoveGroupInterface move_group_hand_;
-    RobotModelLoader robot_model_loader_;
-    RobotModelPtr robot_model_;
-    RobotStatePtr robot_state_;
+    robot_model_loader::RobotModelLoader robot_model_loader_;
+    robot_model::RobotModelPtr robot_model_;
+    robot_state::RobotStatePtr robot_state_;
 
     RealsenseL515 realsense_;
 
     ros::Publisher pub_current_; 
     ros::Publisher pub_stitched_;
 
-    const jointList OPEN_HAND = { 0.04, 0.04 };
-    const jointList CLOSED_HAND = { 0.0, 0.0 };
+    static const double TCP_OFFSET;
 
-    const std::string WORLD_FRAME = "world";
-    const std::string PC_CURRENT_TOPIC = "/panda_bin_picking/cloud_current";
-    const std::string PC_STITCHED_TOPIC = "/panda_bin_picking/cloud_stitched";
-    const std::string GRASPS_TOPIC = "/detect_grasps/clustered_grasps";
-    const std::string CLEAR_OCTOMAP_SERVICE = "/clear_octomap";
+    static const HandGeometry HAND_GEOMETRY;
+    static const JointList OPEN_HAND;
+    static const JointList CLOSED_HAND;
+
+    static const std::string WORLD_FRAME;
+    static const std::string PC_CURRENT_TOPIC;
+    static const std::string PC_STITCHED_TOPIC;
+    static const std::string GRASPS_TOPIC;
+    static const std::string CLEAR_OCTOMAP_SERVICE;
 };
