@@ -35,7 +35,7 @@ include_directories(
   ${PCL_INCLUDE_DIRS}
 )
 
-add_executable(panda_bin_picking src/panda_bin_picking.cpp src/FrankaPanda.cpp src/RealsenseL515.cpp src/Visualizer.cpp)
+add_executable(panda_bin_picking src/panda_bin_picking.cpp src/franka_panda.cpp src/realsense_l515.cpp src/visualizer.cpp)
 add_dependencies(panda_bin_picking ${catkin_EXPORTED_TARGETS})
 target_link_libraries(panda_bin_picking
   ${catkin_LIBRARIES}

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "RealsenseL515.h"
+#include "realsense_l515.h"
 #include "custom_types.h"
 
 #include <moveit/move_group_interface/move_group_interface.h>

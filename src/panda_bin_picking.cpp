@@ -1,5 +1,5 @@
-#include "FrankaPanda.h"
-#include "Visualizer.h"
+#include "franka_panda.h"
+#include "visualizer.h"
 
 #include <ros/ros.h>
 

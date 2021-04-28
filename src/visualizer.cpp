@@ -1,4 +1,4 @@
-#include "Visualizer.h"
+#include "visualizer.h"
 
 #include <eigen_conversions/eigen_msg.h>
 

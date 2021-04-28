@@ -1,5 +1,5 @@
-#include "FrankaPanda.h"
-#include "Visualizer.h"
+#include "franka_panda.h"
+#include "visualizer.h"
 
 #include <std_srvs/Empty.h>
 
@@ -7,14 +7,9 @@
 
 const double FrankaPanda::TCP_OFFSET = 0.1034;
 
-const HandGeometry FrankaPanda::HAND_GEOMETRY {
-    0.054,
-    0.018,
-    0.09,
-    0.005
-};
-const JointList FrankaPanda::OPEN_HAND =    { 0.04, 0.04 };
-const JointList FrankaPanda::CLOSED_HAND =  { 0.0, 0.0 };
+const HandGeometry FrankaPanda::HAND_GEOMETRY   { 0.054, 0.018, 0.09, 0.005 };
+const JointList FrankaPanda::OPEN_HAND =        { 0.04, 0.04 };
+const JointList FrankaPanda::CLOSED_HAND =      { 0.0, 0.0 };
 
 const std::string FrankaPanda::WORLD_FRAME =            "world";
 const std::string FrankaPanda::PC_CURRENT_TOPIC =       "/panda_bin_picking/cloud_current";
@@ -27,9 +22,6 @@ FrankaPanda::FrankaPanda(ros::NodeHandle& n)
 {
     robot_model_ = robot_model_loader_.getModel();
     robot_state_ = std::make_shared<robot_state::RobotState>(robot_model_);
-
-    move_group_arm_.setPlannerId("RRTConnect");   
-    move_group_hand_.setPlannerId("RRT");
 
     pub_current_ = n.advertise<sensor_msgs::PointCloud2>(PC_CURRENT_TOPIC, 1);
     pub_stitched_ = n.advertise<sensor_msgs::PointCloud2>(PC_STITCHED_TOPIC, 1);
