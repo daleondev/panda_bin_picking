@@ -35,8 +35,9 @@ private:
     
     // Picking
     bool tryPoses(const PoseList& poses);
-    bool approachPose(const Pose6D& pose);
-    bool moveToPose(const Pose6D& pose);
+    bool approach(const Pose6D& pose);
+    bool grasp(const Pose6D& pose);
+    bool lift(const Pose6D& pose);
     bool openHand();
     bool closeHand();   
     Pose6D graspConfigToPose6D(const gpd_ros::GraspConfig& grasp);
