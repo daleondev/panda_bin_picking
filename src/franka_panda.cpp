@@ -5,7 +5,7 @@
 
 #include <eigen_conversions/eigen_msg.h>
 
-const double FrankaPanda::TCP_OFFSET = 0.1034;
+const double FrankaPanda::TCP_OFFSET = 0.0915; //0.1034;
 
 const HandGeometry FrankaPanda::HAND_GEOMETRY   { 0.054, 0.018, 0.09, 0.005 };
 const JointList FrankaPanda::OPEN_HAND =        { 0.04, 0.04 };
