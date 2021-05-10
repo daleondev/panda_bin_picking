@@ -5,11 +5,14 @@
 
 #include <eigen_conversions/eigen_msg.h> 
 
-const HandGeometry FrankaPanda::HAND_GEOMETRY   { 0.05, 0.018, 0.09, 0.005 };
+#include <moveit/planning_scene/planning_scene.h>
+#include <moveit/planning_scene_monitor/planning_scene_monitor.h>
+
+const HandGeometry FrankaPanda::HAND_GEOMETRY   { 0.46, 0.018, 0.09, 0.005 };
 const JointList FrankaPanda::OPEN_HAND =        { 0.04, 0.04 };
 const JointList FrankaPanda::CLOSED_HAND =      { 0.0, 0.0 };
 
-const double FrankaPanda::TCP_OFFSET = 0.066; //0.0795; //0.0915 //0.1034
+const double FrankaPanda::TCP_OFFSET = 0.066; //0.1034
 
 const std::string FrankaPanda::WORLD_FRAME =            "world";
 const std::string FrankaPanda::PC_CURRENT_TOPIC =       "/panda_bin_picking/cloud_current";
@@ -90,7 +93,6 @@ bool FrankaPanda::captureAndStitchRealsensePointclouds()
     captureRealsensePointcloud();
     pub_current_.publish(realsensePointcloudMessage());
 
-    // target_joints = {-M_PI_2, 0.0, 0.0, -M_PI_2, 0.0, M_PI_2, M_PI_4};
     target_joints = {-M_PI_2, M_PI_4, 0.0, -M_PI/3.0, 0.0, M_PI_2, M_PI_4};
     if(!planArmMotion(target_joints, plan)) {
         ROS_ERROR("Failed to plan motion for arm");
@@ -105,40 +107,63 @@ bool FrankaPanda::captureAndStitchRealsensePointclouds()
 
 bool FrankaPanda::tryPoses(const PoseList& poses)
 {
-    for (const Pose6D& pose : poses) {
-        Visualizer::plotGrasp(pose.position + TCP_OFFSET * pose.rotation_matrix.col(2).normalized(), pose.rotation_matrix * Eigen::AngleAxisd(-M_PI_4, Eigen::Vector3d::UnitZ()), HAND_GEOMETRY);
+    for (Pose6D pose : poses) {
+        Visualizer::plotGrasp(pose.position + TCP_OFFSET * pose.rotation_matrix.col(2).normalized(), pose.rotation_matrix * Eigen::AngleAxisd(-M_PI_4, Eigen::Vector3d::UnitZ()), HAND_GEOMETRY);     
 
         ROS_INFO("Press Enter to try moving to the pose");
         std::cin.get();
 
-        if (!approach(pose)) {
-            ROS_WARN("Failed to approach");
-            continue;
+        if (tryPose(pose)) {
+            return true;
         }
 
-        if (!openHand()) {
-            ROS_WARN("Failed to open hand");
-            continue;
+        pose.rotation_matrix = pose.rotation_matrix * Eigen::AngleAxisd(M_PI, pose.rotation_matrix.col(2).normalized());
+
+        if (tryPose(pose)) {
+            return true;
         }
-
-        if (!grasp(pose)) {
-            ROS_WARN("Failed to grasp");
-            continue;
-        }
-
-        std_srvs::Empty srv;
-        ros::service::call(CLEAR_OCTOMAP_SERVICE, srv);
-        closeHand();
-
-        // if (!lift(pose)) {
-        //     ROS_WARN("Failed to lift");
-        //     return false;
-        // }
-
-        return true;
     }
 
     return false;
+}
+
+bool FrankaPanda::tryPose(const Pose6D& pose)
+{
+    if (!approach(pose)) {
+        ROS_WARN("Failed to approach");
+        return false;
+    }
+
+    if (!openHand()) {
+        ROS_WARN("Failed to open hand");
+        return false;
+    }
+
+    std_srvs::Empty srv;
+    ros::service::call(CLEAR_OCTOMAP_SERVICE, srv);
+
+    // planning_scene::PlanningScene planning_scene(robot_model_);
+    // collision_detection::AllowedCollisionMatrix acm = planning_scene.getAllowedCollisionMatrix();
+    // acm.setEntry("table_link", robot_model_->getEndEffector("hand")->getLinkModelNamesWithCollisionGeometry(), true);
+
+    if (!grasp(pose)) {
+        ROS_WARN("Failed to grasp");
+        return false;
+    }
+
+    if (!closeHand()) {
+        ROS_WARN("Failed to close hand");
+        return false;
+    }
+
+    // acm.setEntry("table_link", robot_model_->getEndEffector("hand")->getLinkModelNamesWithCollisionGeometry(), false);
+
+    if (!lift(pose)) {
+        ROS_WARN("Failed to lift");
+        return false;
+    }
+
+    return true;
 }
 
 bool FrankaPanda::approach(const Pose6D& pose)
@@ -181,7 +206,7 @@ bool FrankaPanda::lift(const Pose6D& pose)
     Visualizer::plotPose(target_pose.position, target_pose.rotation_matrix);
 
     MoveGroupInterface::Plan plan;
-    if (!planArmMotion(pose, plan)) {
+    if (!planArmMotion(target_pose, plan)) {
         return false;
     }
     executeArmMotion(plan);
@@ -320,3 +345,40 @@ void FrankaPanda::saveRealsensePointcloud() const
 {
     realsense_.savePointcloud("pointcloud.pcd");
 }
+
+
+// grasp.grasp_pose.header.frame_id = WORLD_FRAME;
+// tf::pointEigenToMsg(pose.position, grasp.grasp_pose.pose.position);
+// tf::quaternionEigenToMsg(Eigen::Quaterniond(pose.rotation_matrix), grasp.grasp_pose.pose.orientation);
+
+// grasp.pre_grasp_approach.direction.header.frame_id = WORLD_FRAME;
+// tf::vectorEigenToMsg(pose.rotation_matrix.col(2).normalized(), grasp.pre_grasp_approach.direction.vector);
+// grasp.pre_grasp_approach.min_distance = 0.04;
+// grasp.pre_grasp_approach.desired_distance = 0.06;
+
+// grasp.post_grasp_retreat.direction.header.frame_id = WORLD_FRAME;
+// tf::vectorEigenToMsg(Eigen::Vector3d::UnitZ(), grasp.post_grasp_retreat.direction.vector);
+// grasp.post_grasp_retreat.min_distance = 0.1;
+// grasp.post_grasp_retreat.desired_distance = 0.25;
+
+// grasp.pre_grasp_posture.joint_names.resize(2);
+// grasp.pre_grasp_posture.joint_names[0] = "panda_finger_joint1";
+// grasp.pre_grasp_posture.joint_names[1] = "panda_finger_joint2";
+
+// grasp.pre_grasp_posture.points.resize(1);
+// grasp.pre_grasp_posture.points[0].positions.resize(2);
+// grasp.pre_grasp_posture.points[0].positions[0] = 0.04;
+// grasp.pre_grasp_posture.points[0].positions[1] = 0.04;
+// grasp.pre_grasp_posture.points[0].time_from_start = ros::Duration(0.5);
+
+// grasp.grasp_posture.joint_names.resize(2);
+// grasp.grasp_posture.joint_names[0] = "panda_finger_joint1";
+// grasp.grasp_posture.joint_names[1] = "panda_finger_joint2";
+
+// grasp.grasp_posture.points.resize(1);
+// grasp.grasp_posture.points[0].positions.resize(2);
+// grasp.grasp_posture.points[0].positions[0] = 0.00;
+// grasp.grasp_posture.points[0].positions[1] = 0.00;
+// grasp.grasp_posture.points[0].time_from_start = ros::Duration(0.5);
+
+// grasps.push_back(grasp);

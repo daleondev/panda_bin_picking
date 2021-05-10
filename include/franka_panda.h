@@ -35,6 +35,7 @@ private:
     
     // Picking
     bool tryPoses(const PoseList& poses);
+    bool tryPose(const Pose6D& pose);
     bool approach(const Pose6D& pose);
     bool grasp(const Pose6D& pose);
     bool lift(const Pose6D& pose);
