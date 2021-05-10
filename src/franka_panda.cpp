@@ -3,13 +3,13 @@
 
 #include <std_srvs/Empty.h>
 
-#include <eigen_conversions/eigen_msg.h>
+#include <eigen_conversions/eigen_msg.h> 
 
-const double FrankaPanda::TCP_OFFSET = 0.0915; //0.1034;
-
-const HandGeometry FrankaPanda::HAND_GEOMETRY   { 0.054, 0.018, 0.09, 0.005 };
+const HandGeometry FrankaPanda::HAND_GEOMETRY   { 0.05, 0.018, 0.09, 0.005 };
 const JointList FrankaPanda::OPEN_HAND =        { 0.04, 0.04 };
 const JointList FrankaPanda::CLOSED_HAND =      { 0.0, 0.0 };
+
+const double FrankaPanda::TCP_OFFSET = 0.066; //0.0795; //0.0915 //0.1034
 
 const std::string FrankaPanda::WORLD_FRAME =            "world";
 const std::string FrankaPanda::PC_CURRENT_TOPIC =       "/panda_bin_picking/cloud_current";
@@ -106,7 +106,7 @@ bool FrankaPanda::captureAndStitchRealsensePointclouds()
 bool FrankaPanda::tryPoses(const PoseList& poses)
 {
     for (const Pose6D& pose : poses) {
-        Visualizer::plotGrasp(pose.position + HAND_GEOMETRY.depth * pose.rotation_matrix.col(2).normalized(), pose.rotation_matrix * Eigen::AngleAxisd(-M_PI_4, Eigen::Vector3d::UnitZ()), HAND_GEOMETRY);
+        Visualizer::plotGrasp(pose.position + TCP_OFFSET * pose.rotation_matrix.col(2).normalized(), pose.rotation_matrix * Eigen::AngleAxisd(-M_PI_4, Eigen::Vector3d::UnitZ()), HAND_GEOMETRY);
 
         ROS_INFO("Press Enter to try moving to the pose");
         std::cin.get();
@@ -130,10 +130,10 @@ bool FrankaPanda::tryPoses(const PoseList& poses)
         ros::service::call(CLEAR_OCTOMAP_SERVICE, srv);
         closeHand();
 
-        if (!lift(pose)) {
-            ROS_WARN("Failed to lift");
-            return false;
-        }
+        // if (!lift(pose)) {
+        //     ROS_WARN("Failed to lift");
+        //     return false;
+        // }
 
         return true;
     }
@@ -146,9 +146,9 @@ bool FrankaPanda::approach(const Pose6D& pose)
     Pose6D target_pose{ pose };
 
     const Eigen::Vector3d direction = target_pose.rotation_matrix.col(2);
-    target_pose.position += -0.04*direction.normalized();
+    target_pose.position += -0.06*direction.normalized();
 
-    Visualizer::plotPose(target_pose.position + TCP_OFFSET * direction.normalized(), target_pose.rotation_matrix);
+    Visualizer::plotPose(target_pose.position, target_pose.rotation_matrix);
 
     MoveGroupInterface::Plan plan;
     if (!planArmMotion(target_pose, plan)) {
@@ -161,8 +161,7 @@ bool FrankaPanda::approach(const Pose6D& pose)
 
 bool FrankaPanda::grasp(const Pose6D& pose)
 {
-    const Eigen::Vector3d direction = pose.rotation_matrix.col(2);
-    Visualizer::plotPose(pose.position + TCP_OFFSET * direction.normalized(), pose.rotation_matrix);
+    Visualizer::plotPose(pose.position, pose.rotation_matrix);
 
     MoveGroupInterface::Plan plan;
     if (!planArmMotion(pose, plan)) {
@@ -179,8 +178,7 @@ bool FrankaPanda::lift(const Pose6D& pose)
 
     target_pose.position.z() += 0.1;
 
-    const Eigen::Vector3d direction = target_pose.rotation_matrix.col(2);
-    Visualizer::plotPose(target_pose.position + TCP_OFFSET * direction.normalized(), target_pose.rotation_matrix);
+    Visualizer::plotPose(target_pose.position, target_pose.rotation_matrix);
 
     MoveGroupInterface::Plan plan;
     if (!planArmMotion(pose, plan)) {
