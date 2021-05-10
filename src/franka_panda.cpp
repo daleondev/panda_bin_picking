@@ -5,11 +5,11 @@
 
 #include <eigen_conversions/eigen_msg.h> 
 
-const HandGeometry FrankaPanda::HAND_GEOMETRY   { 0.054, 0.018, 0.09, 0.005 };
+const HandGeometry FrankaPanda::HAND_GEOMETRY   { 0.05, 0.018, 0.09, 0.005 };
 const JointList FrankaPanda::OPEN_HAND =        { 0.04, 0.04 };
 const JointList FrankaPanda::CLOSED_HAND =      { 0.0, 0.0 };
 
-const double FrankaPanda::TCP_OFFSET = 0.0795; //0.0915 //0.1034
+const double FrankaPanda::TCP_OFFSET = 0.066; //0.0795; //0.0915 //0.1034
 
 const std::string FrankaPanda::WORLD_FRAME =            "world";
 const std::string FrankaPanda::PC_CURRENT_TOPIC =       "/panda_bin_picking/cloud_current";
