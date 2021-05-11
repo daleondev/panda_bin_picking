@@ -4,11 +4,12 @@
 #include <std_srvs/Empty.h>
 
 #include <eigen_conversions/eigen_msg.h> 
+#include <moveit/robot_state/conversions.h>
 
-#include <moveit/planning_scene/planning_scene.h>
-#include <moveit/planning_scene_monitor/planning_scene_monitor.h>
+// #include <moveit/planning_scene/planning_scene.h>
+// #include <moveit/planning_scene_monitor/planning_scene_monitor.h>
 
-const HandGeometry FrankaPanda::HAND_GEOMETRY   { 0.46, 0.018, 0.09, 0.005 };
+const HandGeometry FrankaPanda::HAND_GEOMETRY   { 0.046, 0.018, 0.09, 0.005 };
 const JointList FrankaPanda::OPEN_HAND =        { 0.04, 0.04 };
 const JointList FrankaPanda::CLOSED_HAND =      { 0.0, 0.0 };
 
@@ -36,6 +37,23 @@ FrankaPanda::~FrankaPanda() = default;
 
 bool FrankaPanda::detect(GraspConfigList& out_grasps)
 {
+    // Pose6D pose;
+    // pose.position = Eigen::Vector3d(0.4627702524794986, 0.1558254417577506, 0.5902303306177155);
+    // Eigen::Quaterniond EP;
+    // EP.x() = 0.9239580220586624;
+    // EP.y() = -0.3824938786685418;
+    // EP.z() = 2.719745688542278e-05;
+    // EP.w() = 7.426195154867366e-05;
+    // pose.rotation_matrix = EP;
+
+    // moveit_msgs::RobotTrajectory traj;
+    // if (!planArmMotionLin(pose, traj)) {
+    //     return false;
+    // }
+    // executeArmMotion(traj);
+
+    // return false;
+
     if (!captureAndStitchRealsensePointclouds()) {
         ROS_ERROR("Failed to capture and stitch pointclouds");
         return false;
@@ -45,10 +63,15 @@ bool FrankaPanda::detect(GraspConfigList& out_grasps)
     gpd_ros::GraspConfigList::ConstPtr grasp_configs = ros::topic::waitForMessage<gpd_ros::GraspConfigList>(GRASPS_TOPIC);
     out_grasps = grasp_configs->grasps;
 
+    if (out_grasps.empty()) {
+        ROS_ERROR("No Grasp found");
+        return false;
+    }
+
     return true;
 }
 
-bool FrankaPanda::pick(GraspConfigList& grasps)
+bool FrankaPanda::pickAndPlace(GraspConfigList& grasps)
 {
     std::sort(grasps.begin(), grasps.end(), [](gpd_ros::GraspConfig lhs, gpd_ros::GraspConfig rhs) -> bool {
         return lhs.score.data > rhs.score.data;
@@ -60,7 +83,7 @@ bool FrankaPanda::pick(GraspConfigList& grasps)
         poses.push_back(graspConfigToPose6D(grasp));
     }
 
-    if (!tryPoses(poses)) {
+    if (!pick(poses)) {
         ROS_ERROR("No grasp was reachable");
         return false;
     }
@@ -76,7 +99,7 @@ bool FrankaPanda::captureAndStitchRealsensePointclouds()
     MoveGroupInterface::Plan plan;
 
     JointList target_joints = {-3*M_PI_4, 0.0, 0.0, -M_PI_2, M_PI_4, M_PI_2, M_PI_4};
-    if(!planArmMotion(target_joints, plan)) {
+    if(!planArmMotionPtp(target_joints, plan)) {
         ROS_ERROR("Failed to plan motion for arm");
         return false;
     }
@@ -85,7 +108,7 @@ bool FrankaPanda::captureAndStitchRealsensePointclouds()
     pub_current_.publish(realsensePointcloudMessage());  
 
     target_joints = {-M_PI_4, 0.0, 0.0, -M_PI_2, -M_PI_4, M_PI_2, M_PI_4};
-    if(!planArmMotion(target_joints, plan)) {
+    if(!planArmMotionPtp(target_joints, plan)) {
         ROS_ERROR("Failed to plan motion for arm");
         return false;
     }
@@ -94,7 +117,7 @@ bool FrankaPanda::captureAndStitchRealsensePointclouds()
     pub_current_.publish(realsensePointcloudMessage());
 
     target_joints = {-M_PI_2, M_PI_4, 0.0, -M_PI/3.0, 0.0, M_PI_2, M_PI_4};
-    if(!planArmMotion(target_joints, plan)) {
+    if(!planArmMotionPtp(target_joints, plan)) {
         ROS_ERROR("Failed to plan motion for arm");
         return false;
     }
@@ -105,7 +128,7 @@ bool FrankaPanda::captureAndStitchRealsensePointclouds()
     return true;
 }
 
-bool FrankaPanda::tryPoses(const PoseList& poses)
+bool FrankaPanda::pick(const PoseList& poses)
 {
     for (Pose6D pose : poses) {
         Visualizer::plotGrasp(pose.position + TCP_OFFSET * pose.rotation_matrix.col(2).normalized(), pose.rotation_matrix * Eigen::AngleAxisd(-M_PI_4, Eigen::Vector3d::UnitZ()), HAND_GEOMETRY);     
@@ -113,13 +136,13 @@ bool FrankaPanda::tryPoses(const PoseList& poses)
         ROS_INFO("Press Enter to try moving to the pose");
         std::cin.get();
 
-        if (tryPose(pose)) {
+        if (tryPick(pose)) {
             return true;
         }
 
-        pose.rotation_matrix = pose.rotation_matrix * Eigen::AngleAxisd(M_PI, pose.rotation_matrix.col(2).normalized());
+        pose.rotation_matrix = pose.rotation_matrix * Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitZ());  //Eigen::AngleAxisd(M_PI, pose.rotation_matrix.col(2).normalized());
 
-        if (tryPose(pose)) {
+        if (tryPick(pose)) {
             return true;
         }
     }
@@ -127,7 +150,7 @@ bool FrankaPanda::tryPoses(const PoseList& poses)
     return false;
 }
 
-bool FrankaPanda::tryPose(const Pose6D& pose)
+bool FrankaPanda::tryPick(const Pose6D& pose)
 {
     if (!approach(pose)) {
         ROS_WARN("Failed to approach");
@@ -139,9 +162,6 @@ bool FrankaPanda::tryPose(const Pose6D& pose)
         return false;
     }
 
-    std_srvs::Empty srv;
-    ros::service::call(CLEAR_OCTOMAP_SERVICE, srv);
-
     // planning_scene::PlanningScene planning_scene(robot_model_);
     // collision_detection::AllowedCollisionMatrix acm = planning_scene.getAllowedCollisionMatrix();
     // acm.setEntry("table_link", robot_model_->getEndEffector("hand")->getLinkModelNamesWithCollisionGeometry(), true);
@@ -150,6 +170,9 @@ bool FrankaPanda::tryPose(const Pose6D& pose)
         ROS_WARN("Failed to grasp");
         return false;
     }
+
+    std_srvs::Empty srv;
+    ros::service::call(CLEAR_OCTOMAP_SERVICE, srv);
 
     if (!closeHand()) {
         ROS_WARN("Failed to close hand");
@@ -176,7 +199,7 @@ bool FrankaPanda::approach(const Pose6D& pose)
     Visualizer::plotPose(target_pose.position, target_pose.rotation_matrix);
 
     MoveGroupInterface::Plan plan;
-    if (!planArmMotion(target_pose, plan)) {
+    if (!planArmMotionPtp(target_pose, plan)) {
         return false;
     }
     executeArmMotion(plan);
@@ -188,11 +211,11 @@ bool FrankaPanda::grasp(const Pose6D& pose)
 {
     Visualizer::plotPose(pose.position, pose.rotation_matrix);
 
-    MoveGroupInterface::Plan plan;
-    if (!planArmMotion(pose, plan)) {
+    moveit_msgs::RobotTrajectory traj;
+    if (!planArmMotionLin(pose, traj)) {
         return false;
     }
-    executeArmMotion(plan);
+    executeArmMotion(traj);
 
     return true;
 }
@@ -201,15 +224,15 @@ bool FrankaPanda::lift(const Pose6D& pose)
 {   
     Pose6D target_pose{ pose };
 
-    target_pose.position.z() += 0.1;
+    target_pose.position.z() += 0.5;
 
     Visualizer::plotPose(target_pose.position, target_pose.rotation_matrix);
 
-    MoveGroupInterface::Plan plan;
-    if (!planArmMotion(target_pose, plan)) {
+    moveit_msgs::RobotTrajectory traj;
+    if (!planArmMotionLin(target_pose, traj)) {
         return false;
     }
-    executeArmMotion(plan);
+    executeArmMotion(traj);
 
     return true;
 }
@@ -257,13 +280,13 @@ Pose6D FrankaPanda::graspConfigToPose6D(const gpd_ros::GraspConfig& grasp)
     return pose;
 }
 
-bool FrankaPanda::planArmMotion(const JointList& target_joints, MoveGroupInterface::Plan& out_plan)
+bool FrankaPanda::planArmMotionPtp(const JointList& target_joints, MoveGroupInterface::Plan& out_plan)
 {
     move_group_arm_.setJointValueTarget(target_joints);
     return move_group_arm_.plan(out_plan) == MoveItErrorCode::SUCCESS;
 }
 
-bool FrankaPanda::planArmMotion(const Pose6D& target_pose, MoveGroupInterface::Plan& out_plan)
+bool FrankaPanda::planArmMotionPtp(const Pose6D& target_pose, MoveGroupInterface::Plan& out_plan)
 {
     geometry_msgs::Pose pose;
     tf::pointEigenToMsg(target_pose.position, pose.position);
@@ -273,10 +296,23 @@ bool FrankaPanda::planArmMotion(const Pose6D& target_pose, MoveGroupInterface::P
     return move_group_arm_.plan(out_plan) == MoveItErrorCode::SUCCESS;
 }
 
-bool FrankaPanda::planArmMotion(const std::string& name, MoveGroupInterface::Plan& out_plan)
+bool FrankaPanda::planArmMotionPtp(const std::string& name, MoveGroupInterface::Plan& out_plan)
 {
     move_group_arm_.setNamedTarget(name);
     return move_group_arm_.plan(out_plan) == MoveItErrorCode::SUCCESS;
+}
+
+bool FrankaPanda::planArmMotionLin(const Pose6D& target_pose, moveit_msgs::RobotTrajectory& out_traj)
+{
+    std::vector<geometry_msgs::Pose> waypoints(1);
+    tf::pointEigenToMsg(target_pose.position, waypoints[0].position);
+    tf::quaternionEigenToMsg(Eigen::Quaterniond(target_pose.rotation_matrix), waypoints[0].orientation);
+
+    const double jump_threshold = 0;
+    const double eef_step = 0.01;
+    const double fraction = move_group_arm_.computeCartesianPath(waypoints, eef_step, jump_threshold, out_traj);
+
+    return fraction != -1.0;
 }
 
 bool FrankaPanda::planHandMotion(const JointList& target_joints, MoveGroupInterface::Plan& out_plan)
@@ -295,6 +331,12 @@ bool FrankaPanda::executeArmMotion(const MoveGroupInterface::Plan& plan, const f
 {
     move_group_arm_.setMaxVelocityScalingFactor(velocity);
     return move_group_arm_.execute(plan) == MoveItErrorCode::SUCCESS;
+}
+
+bool FrankaPanda::executeArmMotion(const moveit_msgs::RobotTrajectory& traj, const float velocity)
+{
+    move_group_arm_.setMaxVelocityScalingFactor(velocity);
+    return move_group_arm_.execute(traj) == MoveItErrorCode::SUCCESS;
 }
 
 bool FrankaPanda::executeHandMotion(const MoveGroupInterface::Plan& plan, const float velocity)

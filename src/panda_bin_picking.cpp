@@ -22,8 +22,8 @@ int main(int argc, char **argv)
     error("detection failed");
   }
 
-  if(!panda.pick(grasps)) {
-    error("picking failed");
+  if(!panda.pickAndPlace(grasps)) {
+    error("pick and place failed");
   }
 
   ros::shutdown();

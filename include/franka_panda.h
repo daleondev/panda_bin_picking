@@ -22,7 +22,7 @@ public:
     ~FrankaPanda();
 
     bool detect(GraspConfigList& out_grasps);
-    bool pick(GraspConfigList& grasps);
+    bool pickAndPlace(GraspConfigList& grasps);
     
     bool getTransform(const std::string& target_frame, const std::string& source_frame, tf::StampedTransform& out_transform) const;
     
@@ -34,8 +34,8 @@ private:
     void saveRealsensePointcloud() const;
     
     // Picking
-    bool tryPoses(const PoseList& poses);
-    bool tryPose(const Pose6D& pose);
+    bool pick(const PoseList& poses);
+    bool tryPick(const Pose6D& pose);
     bool approach(const Pose6D& pose);
     bool grasp(const Pose6D& pose);
     bool lift(const Pose6D& pose);
@@ -44,14 +44,18 @@ private:
     Pose6D graspConfigToPose6D(const gpd_ros::GraspConfig& grasp);
 
     // Planning
-    bool planArmMotion(const JointList& target_joints, MoveGroupInterface::Plan& out_plan);
-    bool planArmMotion(const Pose6D& target_pose, MoveGroupInterface::Plan& out_plan);
-    bool planArmMotion(const std::string& name, MoveGroupInterface::Plan& out_plan);
+    bool planArmMotionPtp(const JointList& target_joints, MoveGroupInterface::Plan& out_plan);
+    bool planArmMotionPtp(const Pose6D& target_pose, MoveGroupInterface::Plan& out_plan);   
+    bool planArmMotionPtp(const std::string& name, MoveGroupInterface::Plan& out_plan);
+    bool planArmMotionLin(const JointList& target_joints, moveit_msgs::RobotTrajectory& out_traj);
+    bool planArmMotionLin(const Pose6D& target_pose, moveit_msgs::RobotTrajectory& out_traj);  
+    bool planArmMotionLin(const std::string& name, moveit_msgs::RobotTrajectory& out_traj);
     bool planHandMotion(const JointList& target_joints, MoveGroupInterface::Plan& out_plan);
     bool planHandMotion(const std::string& name, MoveGroupInterface::Plan& out_plan);
 
     // Moving
     bool executeArmMotion(const MoveGroupInterface::Plan& plan, const float velocity = 1.0);
+    bool executeArmMotion(const moveit_msgs::RobotTrajectory& traj, const float velocity = 1.0);
     bool executeHandMotion(const MoveGroupInterface::Plan& plan, const float velocity = 1.0);
 
     MoveGroupInterface move_group_arm_;
