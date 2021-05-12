@@ -33,8 +33,9 @@ private:
     sensor_msgs::PointCloud2 realsensePointcloudMessage() const;
     void saveRealsensePointcloud() const;
     
-    // Picking
+    // Pick and Place
     bool pick(const PoseList& poses);
+    bool place();
     bool tryPick(const Pose6D& pose);
     bool approach(const Pose6D& pose);
     bool grasp(const Pose6D& pose);

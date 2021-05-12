@@ -28,6 +28,7 @@ FrankaPanda::FrankaPanda(ros::NodeHandle& n)
     robot_state_ = std::make_shared<robot_state::RobotState>(robot_model_);
 
     // move_group_arm_.setPlannerId("PTP");
+    move_group_arm_.setPlanningTime(2.0);
 
     pub_current_ = n.advertise<sensor_msgs::PointCloud2>(PC_CURRENT_TOPIC, 1);
     pub_stitched_ = n.advertise<sensor_msgs::PointCloud2>(PC_STITCHED_TOPIC, 1);
@@ -64,7 +65,7 @@ bool FrankaPanda::detect(GraspConfigList& out_grasps)
     out_grasps = grasp_configs->grasps;
 
     if (out_grasps.empty()) {
-        ROS_ERROR("No Grasp found");
+        ROS_WARN("No Grasp found");
         return false;
     }
 
@@ -84,7 +85,12 @@ bool FrankaPanda::pickAndPlace(GraspConfigList& grasps)
     }
 
     if (!pick(poses)) {
-        ROS_ERROR("No grasp was reachable");
+        ROS_ERROR("No object was pickable");
+        return false;
+    }
+
+    if (!place()) {
+        ROS_ERROR("Couldn't place object");
         return false;
     }
 
@@ -95,6 +101,7 @@ bool FrankaPanda::captureAndStitchRealsensePointclouds()
 {
     std_srvs::Empty srv;
     ros::service::call(CLEAR_OCTOMAP_SERVICE, srv);
+    realsense_.clearPointcloud();
 
     MoveGroupInterface::Plan plan;
 
@@ -133,14 +140,11 @@ bool FrankaPanda::pick(const PoseList& poses)
     for (Pose6D pose : poses) {
         Visualizer::plotGrasp(pose.position + TCP_OFFSET * pose.rotation_matrix.col(2).normalized(), pose.rotation_matrix * Eigen::AngleAxisd(-M_PI_4, Eigen::Vector3d::UnitZ()), HAND_GEOMETRY);     
 
-        ROS_INFO("Press Enter to try moving to the pose");
-        std::cin.get();
-
         if (tryPick(pose)) {
             return true;
         }
 
-        pose.rotation_matrix = pose.rotation_matrix * Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitZ());  //Eigen::AngleAxisd(M_PI, pose.rotation_matrix.col(2).normalized());
+        pose.rotation_matrix = pose.rotation_matrix * Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitZ());
 
         if (tryPick(pose)) {
             return true;
@@ -148,6 +152,25 @@ bool FrankaPanda::pick(const PoseList& poses)
     }
 
     return false;
+}
+
+bool FrankaPanda::place()
+{
+    JointList target_joints = {0, M_PI_4, 0.0, -M_PI/3.0, 0.0, M_PI_2, M_PI_4};
+
+    MoveGroupInterface::Plan plan;
+    if(!planArmMotionPtp(target_joints, plan)) {
+        ROS_ERROR("Failed to plan motion for arm");
+        return false;
+    }
+    executeArmMotion(plan);
+
+    if (!openHand()) {
+        ROS_WARN("Failed to open hand");
+        return false;
+    }
+
+    return true;
 }
 
 bool FrankaPanda::tryPick(const Pose6D& pose)
@@ -215,7 +238,7 @@ bool FrankaPanda::grasp(const Pose6D& pose)
     if (!planArmMotionLin(pose, traj)) {
         return false;
     }
-    executeArmMotion(traj);
+    executeArmMotion(traj, 0.2);
 
     return true;
 }
@@ -224,15 +247,20 @@ bool FrankaPanda::lift(const Pose6D& pose)
 {   
     Pose6D target_pose{ pose };
 
-    target_pose.position.z() += 0.5;
+    target_pose.position.z() += 0.2;
 
     Visualizer::plotPose(target_pose.position, target_pose.rotation_matrix);
 
     moveit_msgs::RobotTrajectory traj;
     if (!planArmMotionLin(target_pose, traj)) {
-        return false;
+        MoveGroupInterface::Plan plan;
+        if (!planArmMotionPtp(target_pose, plan)) {
+            return false;
+        }
+        executeArmMotion(plan);
+    }else {
+        executeArmMotion(traj);
     }
-    executeArmMotion(traj);
 
     return true;
 }
@@ -310,9 +338,12 @@ bool FrankaPanda::planArmMotionLin(const Pose6D& target_pose, moveit_msgs::Robot
 
     const double jump_threshold = 0;
     const double eef_step = 0.01;
+    move_group_arm_.setPlanningTime(10.0);
     const double fraction = move_group_arm_.computeCartesianPath(waypoints, eef_step, jump_threshold, out_traj);
+    move_group_arm_.setPlanningTime(2.0);
+    ROS_INFO("%.2f%% acheived", fraction * 100.0);
 
-    return fraction != -1.0;
+    return fraction > 0.99;
 }
 
 bool FrankaPanda::planHandMotion(const JointList& target_joints, MoveGroupInterface::Plan& out_plan)
@@ -352,7 +383,7 @@ bool FrankaPanda::captureRealsensePointcloud()
         return false;
     }
 
-    realsense_.capture(transform);
+    realsense_.capturePointcloud(transform);
 
     return true;
 }

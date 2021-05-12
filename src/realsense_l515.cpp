@@ -17,7 +17,7 @@ RealsenseL515::RealsenseL515()
 
 RealsenseL515::~RealsenseL515() = default;
 
-void RealsenseL515::capture(const tf::StampedTransform& transform)
+void RealsenseL515::capturePointcloud(const tf::StampedTransform& transform)
 {
     sensor_msgs::PointCloud2::ConstPtr pc_msg = ros::topic::waitForMessage<sensor_msgs::PointCloud2>(PC_TOPIC);
 
@@ -29,6 +29,11 @@ void RealsenseL515::capture(const tf::StampedTransform& transform)
     // thinOutPointcloud(0.01f, 0.01f, 0.01f, pc);
 
     *pc_ += *pc;
+}
+
+void RealsenseL515::clearPointcloud()
+{
+    pc_->clear();
 }
 
 sensor_msgs::PointCloud2 RealsenseL515::getPointcloud(const tf::StampedTransform* transform) const

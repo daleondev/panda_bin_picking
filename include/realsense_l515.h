@@ -11,7 +11,8 @@ public:
     RealsenseL515();
     ~RealsenseL515();
 
-    void capture(const tf::StampedTransform& transform);
+    void capturePointcloud(const tf::StampedTransform& transform);
+    void clearPointcloud();
 
     sensor_msgs::PointCloud2 getPointcloud(const tf::StampedTransform* transform = nullptr) const;
     std::string getDepthFrame() const;

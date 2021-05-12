@@ -16,14 +16,19 @@ int main(int argc, char **argv)
 
   Visualizer::init(n);
   FrankaPanda panda(n);
-  
-  GraspConfigList grasps;
-  if(!panda.detect(grasps)) {
-    error("detection failed");
-  }
 
-  if(!panda.pickAndPlace(grasps)) {
-    error("pick and place failed");
+  while (true) {
+  
+    GraspConfigList grasps;
+    if(!panda.detect(grasps)) {
+      ROS_WARN("detection failed");
+      break;
+    }
+
+    if(!panda.pickAndPlace(grasps)) {
+      error("pick and place failed");
+    }
+
   }
 
   ros::shutdown();
