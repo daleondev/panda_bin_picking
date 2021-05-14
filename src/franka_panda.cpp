@@ -118,8 +118,6 @@ bool FrankaPanda::captureAndStitchRealsensePointclouds()
 bool FrankaPanda::pick(const PoseList& poses)
 {
     for (Pose6D pose : poses) {
-        Visualizer::clear();
-
         const Eigen::Vector3d direction = pose.rotation_matrix.col(2).normalized();
         Visualizer::plotGrasp(pose.position + TCP_OFFSET*direction, pose.rotation_matrix*Eigen::AngleAxisd(-M_PI_4, Eigen::Vector3d::UnitZ()), HAND_GEOMETRY);     
 
@@ -134,6 +132,8 @@ bool FrankaPanda::pick(const PoseList& poses)
             return true;
         }
         pub_stitched_.publish(realsensePointcloudMessage());
+
+        Visualizer::clear();
     }
 
     return false;
@@ -144,7 +144,7 @@ bool FrankaPanda::place()
     const JointList target_joints = {0, M_PI_4, 0.0, -M_PI/3.0, 0.0, M_PI_2, M_PI_4};
 
     MoveGroupInterface::Plan plan;
-    if(!planArmMotionPtp(target_joints, plan, 0.5)) {
+    if(!planArmMotionPtp(target_joints, plan, 0.3)) {
         ROS_ERROR("Failed to plan motion for arm");
         return false;
     }
@@ -186,6 +186,8 @@ bool FrankaPanda::tryPick(const Pose6D& pose)
         return false;
     }
 
+    pub_stitched_.publish(realsensePointcloudMessage());
+
     if (!lift(pose)) {
         ROS_WARN("Failed to lift");
         return true;
@@ -202,7 +204,7 @@ bool FrankaPanda::approach(const Pose6D& pose)
     Visualizer::plotPose(target_pose.position, target_pose.rotation_matrix);
 
     MoveGroupInterface::Plan plan;
-    if (!planArmMotionPtp(target_pose, plan, 0.5)) {
+    if (!planArmMotionPtp(target_pose, plan, 0.3)) {
         return false;
     }
     executeArmMotion(plan);
@@ -215,7 +217,7 @@ bool FrankaPanda::grasp(const Pose6D& pose)
     Visualizer::plotPose(pose.position, pose.rotation_matrix);
 
     moveit_msgs::RobotTrajectory traj;
-    if (!planArmMotionLin(pose, traj, 0.1)) {
+    if (!planArmMotionLin(pose, traj, 0.01)) {
         return false;
     }
     executeArmMotion(traj);
@@ -234,7 +236,7 @@ bool FrankaPanda::lift(const Pose6D& pose)
     moveit_msgs::RobotTrajectory traj;
     if (!planArmMotionLin(target_pose, traj)) {
         MoveGroupInterface::Plan plan;
-        if (!planArmMotionPtp(target_pose, plan, 0.3)) {
+        if (!planArmMotionPtp(target_pose, plan, 0.1)) {
             return false;
         }
         executeArmMotion(plan);
