@@ -6,14 +6,11 @@
 #include <eigen_conversions/eigen_msg.h> 
 #include <moveit/robot_state/conversions.h>
 
-// #include <moveit/planning_scene/planning_scene.h>
-// #include <moveit/planning_scene_monitor/planning_scene_monitor.h>
-
 const HandGeometry FrankaPanda::HAND_GEOMETRY   { 0.046, 0.018, 0.09, 0.005 };
 const JointList FrankaPanda::OPEN_HAND =        { 0.04, 0.04 };
 const JointList FrankaPanda::CLOSED_HAND =      { 0.0, 0.0 };
 
-const double FrankaPanda::TCP_OFFSET = 0.066; //0.1034
+const double FrankaPanda::TCP_OFFSET = 0.066; //0.066; //0.1034
 
 const std::string FrankaPanda::WORLD_FRAME =            "world";
 const std::string FrankaPanda::PC_CURRENT_TOPIC =       "/panda_bin_picking/cloud_current";
@@ -38,23 +35,6 @@ FrankaPanda::~FrankaPanda() = default;
 
 bool FrankaPanda::detect(GraspConfigList& out_grasps)
 {
-    // Pose6D pose;
-    // pose.position = Eigen::Vector3d(0.4627702524794986, 0.1558254417577506, 0.5902303306177155);
-    // Eigen::Quaterniond EP;
-    // EP.x() = 0.9239580220586624;
-    // EP.y() = -0.3824938786685418;
-    // EP.z() = 2.719745688542278e-05;
-    // EP.w() = 7.426195154867366e-05;
-    // pose.rotation_matrix = EP;
-
-    // moveit_msgs::RobotTrajectory traj;
-    // if (!planArmMotionLin(pose, traj)) {
-    //     return false;
-    // }
-    // executeArmMotion(traj);
-
-    // return false;
-
     if (!captureAndStitchRealsensePointclouds()) {
         ROS_ERROR("Failed to capture and stitch pointclouds");
         return false;
@@ -159,12 +139,15 @@ bool FrankaPanda::place()
     JointList target_joints = {0, M_PI_4, 0.0, -M_PI/3.0, 0.0, M_PI_2, M_PI_4};
 
     MoveGroupInterface::Plan plan;
-    if(!planArmMotionPtp(target_joints, plan)) {
+    if(!planArmMotionPtp(target_joints, plan, 0.5)) {
         ROS_ERROR("Failed to plan motion for arm");
         return false;
     }
     executeArmMotion(plan);
 
+    move_group_arm_.stop();
+    move_group_hand_.stop();
+    ROS_INFO("OPEN HAND 1");
     if (!openHand()) {
         ROS_WARN("Failed to open hand");
         return false;
@@ -185,28 +168,22 @@ bool FrankaPanda::tryPick(const Pose6D& pose)
         return false;
     }
 
-    // planning_scene::PlanningScene planning_scene(robot_model_);
-    // collision_detection::AllowedCollisionMatrix acm = planning_scene.getAllowedCollisionMatrix();
-    // acm.setEntry("table_link", robot_model_->getEndEffector("hand")->getLinkModelNamesWithCollisionGeometry(), true);
+    std_srvs::Empty srv;
+    ros::service::call(CLEAR_OCTOMAP_SERVICE, srv);
 
     if (!grasp(pose)) {
         ROS_WARN("Failed to grasp");
         return false;
     }
 
-    std_srvs::Empty srv;
-    ros::service::call(CLEAR_OCTOMAP_SERVICE, srv);
-
     if (!closeHand()) {
         ROS_WARN("Failed to close hand");
         return false;
     }
 
-    // acm.setEntry("table_link", robot_model_->getEndEffector("hand")->getLinkModelNamesWithCollisionGeometry(), false);
-
     if (!lift(pose)) {
         ROS_WARN("Failed to lift");
-        return false;
+        return true;
     }
 
     return true;
@@ -222,7 +199,7 @@ bool FrankaPanda::approach(const Pose6D& pose)
     Visualizer::plotPose(target_pose.position, target_pose.rotation_matrix);
 
     MoveGroupInterface::Plan plan;
-    if (!planArmMotionPtp(target_pose, plan)) {
+    if (!planArmMotionPtp(target_pose, plan, 0.5)) {
         return false;
     }
     executeArmMotion(plan);
@@ -235,10 +212,10 @@ bool FrankaPanda::grasp(const Pose6D& pose)
     Visualizer::plotPose(pose.position, pose.rotation_matrix);
 
     moveit_msgs::RobotTrajectory traj;
-    if (!planArmMotionLin(pose, traj)) {
+    if (!planArmMotionLin(pose, traj, 0.1)) {
         return false;
     }
-    executeArmMotion(traj, 0.2);
+    executeArmMotion(traj);
 
     return true;
 }
@@ -254,7 +231,7 @@ bool FrankaPanda::lift(const Pose6D& pose)
     moveit_msgs::RobotTrajectory traj;
     if (!planArmMotionLin(target_pose, traj)) {
         MoveGroupInterface::Plan plan;
-        if (!planArmMotionPtp(target_pose, plan)) {
+        if (!planArmMotionPtp(target_pose, plan, 0.3)) {
             return false;
         }
         executeArmMotion(plan);
@@ -267,6 +244,7 @@ bool FrankaPanda::lift(const Pose6D& pose)
 
 bool FrankaPanda::openHand()
 {
+    ROS_INFO("OPEN HAND 2");
     MoveGroupInterface::Plan plan;
     if (!planHandMotion(OPEN_HAND, plan)) {
         return false;
@@ -279,7 +257,7 @@ bool FrankaPanda::openHand()
 bool FrankaPanda::closeHand()
 {
     MoveGroupInterface::Plan plan;
-    if (!planHandMotion(CLOSED_HAND, plan)) {
+    if (!planHandMotion(CLOSED_HAND, plan, 0.3)) {
         return false;
     }
     executeHandMotion(plan);
@@ -308,14 +286,18 @@ Pose6D FrankaPanda::graspConfigToPose6D(const gpd_ros::GraspConfig& grasp)
     return pose;
 }
 
-bool FrankaPanda::planArmMotionPtp(const JointList& target_joints, MoveGroupInterface::Plan& out_plan)
+bool FrankaPanda::planArmMotionPtp(const JointList& target_joints, MoveGroupInterface::Plan& out_plan, const float velocity)
 {
+    move_group_arm_.setMaxVelocityScalingFactor(velocity);
+
     move_group_arm_.setJointValueTarget(target_joints);
     return move_group_arm_.plan(out_plan) == MoveItErrorCode::SUCCESS;
 }
 
-bool FrankaPanda::planArmMotionPtp(const Pose6D& target_pose, MoveGroupInterface::Plan& out_plan)
+bool FrankaPanda::planArmMotionPtp(const Pose6D& target_pose, MoveGroupInterface::Plan& out_plan, const float velocity)
 {
+    move_group_arm_.setMaxVelocityScalingFactor(velocity);
+
     geometry_msgs::Pose pose;
     tf::pointEigenToMsg(target_pose.position, pose.position);
     tf::quaternionEigenToMsg(Eigen::Quaterniond(target_pose.rotation_matrix), pose.orientation);
@@ -324,14 +306,18 @@ bool FrankaPanda::planArmMotionPtp(const Pose6D& target_pose, MoveGroupInterface
     return move_group_arm_.plan(out_plan) == MoveItErrorCode::SUCCESS;
 }
 
-bool FrankaPanda::planArmMotionPtp(const std::string& name, MoveGroupInterface::Plan& out_plan)
+bool FrankaPanda::planArmMotionPtp(const std::string& name, MoveGroupInterface::Plan& out_plan, const float velocity)
 {
+    move_group_arm_.setMaxVelocityScalingFactor(velocity);
+
     move_group_arm_.setNamedTarget(name);
     return move_group_arm_.plan(out_plan) == MoveItErrorCode::SUCCESS;
 }
 
-bool FrankaPanda::planArmMotionLin(const Pose6D& target_pose, moveit_msgs::RobotTrajectory& out_traj)
+bool FrankaPanda::planArmMotionLin(const Pose6D& target_pose, moveit_msgs::RobotTrajectory& out_traj, const float velocity)
 {
+    move_group_arm_.setMaxVelocityScalingFactor(velocity);
+
     std::vector<geometry_msgs::Pose> waypoints(1);
     tf::pointEigenToMsg(target_pose.position, waypoints[0].position);
     tf::quaternionEigenToMsg(Eigen::Quaterniond(target_pose.rotation_matrix), waypoints[0].orientation);
@@ -346,33 +332,34 @@ bool FrankaPanda::planArmMotionLin(const Pose6D& target_pose, moveit_msgs::Robot
     return fraction > 0.99;
 }
 
-bool FrankaPanda::planHandMotion(const JointList& target_joints, MoveGroupInterface::Plan& out_plan)
+bool FrankaPanda::planHandMotion(const JointList& target_joints, MoveGroupInterface::Plan& out_plan, const float velocity)
 {
+    move_group_arm_.setMaxVelocityScalingFactor(velocity);
+
     move_group_hand_.setJointValueTarget(target_joints);
     return move_group_hand_.plan(out_plan) == MoveItErrorCode::SUCCESS;
 }
 
-bool FrankaPanda::planHandMotion(const std::string& name, MoveGroupInterface::Plan& out_plan)
+bool FrankaPanda::planHandMotion(const std::string& name, MoveGroupInterface::Plan& out_plan, const float velocity)
 {
+    move_group_arm_.setMaxVelocityScalingFactor(velocity);
+
     move_group_hand_.setNamedTarget(name);
     return move_group_hand_.plan(out_plan) == MoveItErrorCode::SUCCESS;
 }
 
-bool FrankaPanda::executeArmMotion(const MoveGroupInterface::Plan& plan, const float velocity)
+bool FrankaPanda::executeArmMotion(const MoveGroupInterface::Plan& plan)
 {
-    move_group_arm_.setMaxVelocityScalingFactor(velocity);
     return move_group_arm_.execute(plan) == MoveItErrorCode::SUCCESS;
 }
 
-bool FrankaPanda::executeArmMotion(const moveit_msgs::RobotTrajectory& traj, const float velocity)
-{
-    move_group_arm_.setMaxVelocityScalingFactor(velocity);
+bool FrankaPanda::executeArmMotion(const moveit_msgs::RobotTrajectory& traj)
+{    
     return move_group_arm_.execute(traj) == MoveItErrorCode::SUCCESS;
 }
 
-bool FrankaPanda::executeHandMotion(const MoveGroupInterface::Plan& plan, const float velocity)
+bool FrankaPanda::executeHandMotion(const MoveGroupInterface::Plan& plan)
 {
-    move_group_hand_.setMaxVelocityScalingFactor(velocity);
     return move_group_hand_.execute(plan) == MoveItErrorCode::SUCCESS;
 }
 

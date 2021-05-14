@@ -45,19 +45,19 @@ private:
     Pose6D graspConfigToPose6D(const gpd_ros::GraspConfig& grasp);
 
     // Planning
-    bool planArmMotionPtp(const JointList& target_joints, MoveGroupInterface::Plan& out_plan);
-    bool planArmMotionPtp(const Pose6D& target_pose, MoveGroupInterface::Plan& out_plan);   
-    bool planArmMotionPtp(const std::string& name, MoveGroupInterface::Plan& out_plan);
-    bool planArmMotionLin(const JointList& target_joints, moveit_msgs::RobotTrajectory& out_traj);
-    bool planArmMotionLin(const Pose6D& target_pose, moveit_msgs::RobotTrajectory& out_traj);  
-    bool planArmMotionLin(const std::string& name, moveit_msgs::RobotTrajectory& out_traj);
-    bool planHandMotion(const JointList& target_joints, MoveGroupInterface::Plan& out_plan);
-    bool planHandMotion(const std::string& name, MoveGroupInterface::Plan& out_plan);
+    bool planArmMotionPtp(const JointList& target_joints, MoveGroupInterface::Plan& out_plan, const float velocity = 1.0);
+    bool planArmMotionPtp(const Pose6D& target_pose, MoveGroupInterface::Plan& out_plan, const float velocity = 1.0);   
+    bool planArmMotionPtp(const std::string& name, MoveGroupInterface::Plan& out_plan, const float velocity = 1.0);
+    bool planArmMotionLin(const JointList& target_joints, moveit_msgs::RobotTrajectory& out_traj, const float velocity = 1.0);
+    bool planArmMotionLin(const Pose6D& target_pose, moveit_msgs::RobotTrajectory& out_traj, const float velocity = 1.0);  
+    bool planArmMotionLin(const std::string& name, moveit_msgs::RobotTrajectory& out_traj, const float velocity = 1.0);
+    bool planHandMotion(const JointList& target_joints, MoveGroupInterface::Plan& out_plan, const float velocity = 1.0);
+    bool planHandMotion(const std::string& name, MoveGroupInterface::Plan& out_plan, const float velocity = 1.0);
 
     // Moving
-    bool executeArmMotion(const MoveGroupInterface::Plan& plan, const float velocity = 1.0);
-    bool executeArmMotion(const moveit_msgs::RobotTrajectory& traj, const float velocity = 1.0);
-    bool executeHandMotion(const MoveGroupInterface::Plan& plan, const float velocity = 1.0);
+    bool executeArmMotion(const MoveGroupInterface::Plan& plan);
+    bool executeArmMotion(const moveit_msgs::RobotTrajectory& traj);
+    bool executeHandMotion(const MoveGroupInterface::Plan& plan);
 
     MoveGroupInterface move_group_arm_;
     MoveGroupInterface move_group_hand_;
