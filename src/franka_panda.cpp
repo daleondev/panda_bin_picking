@@ -10,7 +10,7 @@ const HandGeometry FrankaPanda::HAND_GEOMETRY   { 0.046, 0.018, 0.09, 0.005 };
 const JointList FrankaPanda::OPEN_HAND =        { 0.04, 0.04 };
 const JointList FrankaPanda::CLOSED_HAND =      { 0.0, 0.0 };
 
-const double FrankaPanda::TCP_OFFSET = 0.066; //0.066; //0.1034
+const double FrankaPanda::TCP_OFFSET = 0.066; //0.1034
 
 const std::string FrankaPanda::WORLD_FRAME =            "world";
 const std::string FrankaPanda::PC_CURRENT_TOPIC =       "/panda_bin_picking/cloud_current";
@@ -79,9 +79,9 @@ bool FrankaPanda::pickAndPlace(GraspConfigList& grasps)
 
 bool FrankaPanda::captureAndStitchRealsensePointclouds()
 {
-    std_srvs::Empty srv;
-    ros::service::call(CLEAR_OCTOMAP_SERVICE, srv);
+    clearOctomap();
     realsense_.clearPointcloud();
+    Visualizer::clear();
 
     MoveGroupInterface::Plan plan;
 
@@ -118,17 +118,22 @@ bool FrankaPanda::captureAndStitchRealsensePointclouds()
 bool FrankaPanda::pick(const PoseList& poses)
 {
     for (Pose6D pose : poses) {
-        Visualizer::plotGrasp(pose.position + TCP_OFFSET * pose.rotation_matrix.col(2).normalized(), pose.rotation_matrix * Eigen::AngleAxisd(-M_PI_4, Eigen::Vector3d::UnitZ()), HAND_GEOMETRY);     
+        Visualizer::clear();
+
+        const Eigen::Vector3d direction = pose.rotation_matrix.col(2).normalized();
+        Visualizer::plotGrasp(pose.position + TCP_OFFSET*direction, pose.rotation_matrix*Eigen::AngleAxisd(-M_PI_4, Eigen::Vector3d::UnitZ()), HAND_GEOMETRY);     
 
         if (tryPick(pose)) {
             return true;
         }
+        pub_stitched_.publish(realsensePointcloudMessage());
 
         pose.rotation_matrix = pose.rotation_matrix * Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitZ());
 
         if (tryPick(pose)) {
             return true;
         }
+        pub_stitched_.publish(realsensePointcloudMessage());
     }
 
     return false;
@@ -136,7 +141,7 @@ bool FrankaPanda::pick(const PoseList& poses)
 
 bool FrankaPanda::place()
 {
-    JointList target_joints = {0, M_PI_4, 0.0, -M_PI/3.0, 0.0, M_PI_2, M_PI_4};
+    const JointList target_joints = {0, M_PI_4, 0.0, -M_PI/3.0, 0.0, M_PI_2, M_PI_4};
 
     MoveGroupInterface::Plan plan;
     if(!planArmMotionPtp(target_joints, plan, 0.5)) {
@@ -152,6 +157,7 @@ bool FrankaPanda::place()
         ROS_WARN("Failed to open hand");
         return false;
     }
+    ros::Duration(1.0).sleep();
 
     return true;
 }
@@ -168,8 +174,7 @@ bool FrankaPanda::tryPick(const Pose6D& pose)
         return false;
     }
 
-    std_srvs::Empty srv;
-    ros::service::call(CLEAR_OCTOMAP_SERVICE, srv);
+    clearOctomap();
 
     if (!grasp(pose)) {
         ROS_WARN("Failed to grasp");
@@ -191,10 +196,8 @@ bool FrankaPanda::tryPick(const Pose6D& pose)
 
 bool FrankaPanda::approach(const Pose6D& pose)
 {
-    Pose6D target_pose{ pose };
-
-    const Eigen::Vector3d direction = target_pose.rotation_matrix.col(2);
-    target_pose.position += -0.06*direction.normalized();
+    const Eigen::Vector3d direction = pose.rotation_matrix.col(2).normalized();
+    const Pose6D target_pose{ pose.position + -0.06*direction, pose.rotation_matrix };
 
     Visualizer::plotPose(target_pose.position, target_pose.rotation_matrix);
 
@@ -406,6 +409,11 @@ void FrankaPanda::saveRealsensePointcloud() const
     realsense_.savePointcloud("pointcloud.pcd");
 }
 
+void FrankaPanda::clearOctomap() const
+{
+    std_srvs::Empty srv;
+    ros::service::call(CLEAR_OCTOMAP_SERVICE, srv);
+}
 
 // grasp.grasp_pose.header.frame_id = WORLD_FRAME;
 // tf::pointEigenToMsg(pose.position, grasp.grasp_pose.pose.position);

@@ -10,8 +10,11 @@
 class Visualizer {
 public:
     static void init(ros::NodeHandle& n);
-    static void plotPose(const Eigen::Vector3d& position, const Eigen::Matrix3d& rotation_matrix);
+
+    static void plotPose(const Eigen::Vector3d& position, const Eigen::Matrix3d& rotation_matrix);    
     static void plotGrasp(const Eigen::Vector3d& position, const Eigen::Matrix3d& rotation_matrix, const HandGeometry& hand_geometry);
+
+    static void clear();
     
 private:
     Visualizer() = delete;
