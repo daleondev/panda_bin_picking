@@ -13,4 +13,4 @@
 - git:
     local-name: panda_moveit_config
     uri: git@github.com:daleondev/panda_moveit_config.git
-    version: develop
+    version: melodic-devel

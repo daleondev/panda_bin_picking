@@ -8,11 +8,14 @@ sudo apt-get install librealsense2-dkms librealsense2-utils librealsense2-dev li
 source /opt/ros/$ROS_DISTRO/setup.bash
 cd ..
 wstool init
-wstool merge panda_realsense_simulation/dependencies.rosinstall
+wstool merge panda_bin_picking/dependencies.rosinstall
 wstool up
 
 cd .. 
 rosdep install -y --from-paths src --ignore-src --rosdistro $ROS_DISTRO
 
 catkin config --extend /opt/ros/$ROS_DISTRO --cmake-args -DCMAKE_BUILD_TYPE=Release
+catkin build gpd_ros
 catkin build
+
+cp -r src/panda_realsense_simulation/models ~/.gazebo
