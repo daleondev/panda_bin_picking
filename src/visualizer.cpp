@@ -23,6 +23,17 @@ void Visualizer::plotGrasp(const Eigen::Vector3d& position, const Eigen::Matrix3
     pub_vis_.publish(createGraspMarkers(position, rotation_matrix, hand_geometry));
 }
 
+void Visualizer::clear()
+{
+    visualization_msgs::MarkerArray marker_array;
+
+    visualization_msgs::Marker marker;
+    marker.action = visualization_msgs::Marker::DELETEALL;
+    marker_array.markers.push_back(marker);
+
+    pub_vis_.publish(marker_array);
+}
+
 visualization_msgs::MarkerArray Visualizer::createPoseMarkers(const Eigen::Vector3d& position, const Eigen::Matrix3d& rotation_matrix)
 {
     const visualization_msgs::Marker x = createAxisMarker(position, rotation_matrix.col(0), COLOR_RED, 5, "world");

@@ -32,6 +32,7 @@ private:
     bool captureRealsensePointcloud();
     sensor_msgs::PointCloud2 realsensePointcloudMessage() const;
     void saveRealsensePointcloud() const;
+    void clearOctomap() const;
     
     // Pick and Place
     bool pick(const PoseList& poses);

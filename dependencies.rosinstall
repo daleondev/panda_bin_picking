@@ -1,0 +1,16 @@
+- git:
+    local-name: franka_ros
+    uri: https://github.com/tahsinkose/franka_ros.git
+    version: simulation
+- git:
+    local-name: gpd_ros
+    uri: https://github.com/atenpas/gpd_ros.git
+    version: master
+- git:
+    local-name: panda_realsense_simulation
+    uri: git@github.com:daleondev/panda_realsense_simulation.git
+    version: develop
+- git:
+    local-name: panda_moveit_config
+    uri: git@github.com:daleondev/panda_moveit_config.git
+    version: develop
