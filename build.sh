@@ -14,8 +14,10 @@ wstool up
 cd .. 
 rosdep install -y --from-paths src --ignore-src --rosdistro $ROS_DISTRO
 
+sed -i 's/PositionJointInterface/EffortJointInterface/' src/franka_ros/franka_description/robots/panda.control.xacro
+cp -r src/panda_realsense_simulation/models ~/.gazebo
+
 catkin config --extend /opt/ros/$ROS_DISTRO --cmake-args -DCMAKE_BUILD_TYPE=Release
 catkin build gpd_ros
 catkin build
 
-cp -r src/panda_realsense_simulation/models ~/.gazebo
