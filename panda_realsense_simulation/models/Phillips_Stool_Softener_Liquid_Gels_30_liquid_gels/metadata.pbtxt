@@ -1,0 +1,39 @@
+model {
+  file: "model.sdf"
+}
+name: "Phillips_Stool_Softener_Liquid_Gels_30_liquid_gels"
+description: "Phillips Stool Softener, Liquid Gels - 30 liquid gels\nOther Information: Each Softgel Contains: sodium 6 mg.  Very low sodium.  Store at room temperature.  Avoid excessive heat 104 degrees F (40 degrees C).  Misc: Docusate sodium.  Genuine.  Gentle, dependable relief.  No. 1 doctor recommended among stool softener ingredients.  Stimulant free.  Cramp free.  Phillips\' Milk of Magnesia has provided stimulant-free relief of constipation for over 125 years.  Easy-to-swallow Phillips\' Liquid Gels contain the No. 1 doctor recommended stool softening ingredient and provide effective relief of occasional constipation.  Unlike some other laxatives, Phillips\' Liquid Gels do not contain the harsh stimulants that can cause pain and cramping.  Liquid Gels help you feel your best by gently drawing water into the stool making it more comfortable to pass.  As with any laxative, your dose should be adjusted within the label directions to meet your own body\'s needs.  Many people find 2 liquid gels to be an effective starting adult dosage.  Phillips\' comfortable, cramp-free relief. www.bayercare.com.  Made in USA."
+version: 1
+authors {
+  name: "Google"
+  email: "scanned-objects@google.com"
+}
+legal {
+  copyright: "Copyright 2020 Google LLC."
+  license: "Creative Commons Attribution 4.0 International"
+}
+annotations {
+  key: "brand"
+  value: "Philips"
+}
+annotations {
+  key: "gtin"
+  value: "00312843035201"
+}
+annotations {
+  key: "mpn"
+  value: "k491688"
+}
+annotations {
+  key: "sku"
+  value: "9091050_20130419_10955498"
+}
+compatibilities {
+  name: "Gazebo"
+  version {
+    major: 11
+  }
+}
+categories {
+  first: "Consumer Goods"
+}

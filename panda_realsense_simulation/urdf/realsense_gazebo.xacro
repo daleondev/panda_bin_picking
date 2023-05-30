@@ -1,0 +1,128 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://wiki.ros.org/xacro">
+
+    <xacro:macro name="realsense_gazebo" params="name:=camera">
+
+        <!-- rgb camera information for gazebo-->
+        <gazebo reference="${name}_color_frame">
+          <sensor name="color" type="camera">
+            <update_rate>60</update_rate>
+            <camera name="__default__">
+              <horizontal_fov>1.20428</horizontal_fov>
+              <image>
+                <width>1920</width>
+                <height>1080</height>
+                <format>RGB_INT8</format>
+              </image>
+              <clip>
+                <near>0.25</near>
+                <far>100</far>
+              </clip>
+              <noise>
+                <type>gaussian</type>
+                <mean>0.0</mean>
+                <stddev>0.007</stddev>
+              </noise>
+            </camera>  
+            <plugin name="color_plugin" filename="libgazebo_ros_camera.so">
+              <alwaysOn>true</alwaysOn>
+              <updateRate>0.0</updateRate>
+              <cameraName>/camera/color</cameraName>
+              <imageTopicName>/camera/color/image_raw</imageTopicName>
+              <cameraInfoTopicName>/camera/color/camera_info</cameraInfoTopicName>
+              <frameName>${name}_color_optical_frame</frameName>
+              <hackBaseline>0.07</hackBaseline>
+              <distortionK1>0.0</distortionK1>
+              <distortionK2>0.0</distortionK2>
+              <distortionK3>0.0</distortionK3>
+              <distortionT1>0.0</distortionT1>
+              <distortionT2>0.0</distortionT2>
+            </plugin>    
+          </sensor>
+        </gazebo>
+
+        <!-- depth camera information for gazebo-->
+        <gazebo reference="${name}_depth_frame">
+          <sensor name="depth" type="depth">
+            <update_rate>20</update_rate>
+            <camera>
+              <horizontal_fov>1.22173</horizontal_fov>
+              <image>
+                <format>B8G8R8</format>
+                <width>640</width>
+                <height>480</height>
+              </image>
+              <clip>
+                <near>0.25</near>
+                <far>3.9</far>
+              </clip>
+              <noise>
+                <type>gaussian</type>
+                <mean>0.0</mean>
+                <stddev>0.007</stddev>
+              </noise>
+            </camera>
+            <plugin name="depth_plugin" filename="libgazebo_ros_openni_kinect.so">
+              <baseline>0.2</baseline>
+              <alwaysOn>true</alwaysOn>
+              <updateRate>0.0</updateRate>
+              <cameraName>camera/depth</cameraName>
+              <!-- <imageTopicName>/camera/depth/image_rect_raw</imageTopicName>
+              <cameraInfoTopicName>/realsense/depth_rgb/camera_info</cameraInfoTopicName> -->
+              <depthImageTopicName>/camera/depth/image_rect_raw</depthImageTopicName>
+              <depthImageCameraInfoTopicName>/camera/depth/camera_info</depthImageCameraInfoTopicName>
+              <pointCloudTopicName>/camera/depth/color/points</pointCloudTopicName>
+              <frameName>${name}_depth_optical_frame</frameName>
+              <pointCloudCutoff>0.25</pointCloudCutoff>
+              <pointCloudCutoffMax>3.9</pointCloudCutoffMax>
+              <hackBaseline>0.07</hackBaseline>
+              <distortionK1>0.0</distortionK1>
+              <distortionK2>0.0</distortionK2>
+              <distortionK3>0.0</distortionK3>
+              <distortionT1>0.0</distortionT1>
+              <distortionT2>0.0</distortionT2>
+            </plugin> 
+          </sensor> 
+        </gazebo>
+
+        <!-- infrared camera information for gazebo
+        <gazebo reference="${name}_infra_frame">
+          <sensor name="ired" type="camera">
+            <update_rate>60</update_rate>
+            <camera name="__default__">
+              <horizontal_fov>1.22173</horizontal_fov>
+              <image>
+                <width>1024</width>
+                <height>768</height>
+                <format>Y8</format>
+              </image>
+              <clip>
+                <near>0.25</near>
+                <far>6.5</far>
+              </clip>
+              <noise>
+                <type>gaussian</type>
+                <mean>0.0</mean>
+                <stddev>0.007</stddev>
+              </noise>
+            </camera>       
+            <plugin name="ired_plugin" filename="libgazebo_ros_camera.so">
+              <alwaysOn>true</alwaysOn>
+              <updateRate>0.0</updateRate>
+              <cameraName>realsense/ired</cameraName>
+              <imageTopicName>/realsense/ired/image_raw</imageTopicName>
+              <cameraInfoTopicName>/realsense/ired/camera_info</cameraInfoTopicName>
+              <frameName>${name}_infra_optical_frame</frameName>
+              <hackBaseline>0.07</hackBaseline>
+              <distortionK1>0.0</distortionK1>
+              <distortionK2>0.0</distortionK2>
+              <distortionK3>0.0</distortionK3>
+              <distortionT1>0.0</distortionT1>
+              <distortionT2>0.0</distortionT2>
+            </plugin> 
+          </sensor> 
+        </gazebo> -->
+
+    </xacro:macro>
+
+</robot>

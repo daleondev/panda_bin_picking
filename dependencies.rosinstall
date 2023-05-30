@@ -1,16 +1,12 @@
 - git:
     local-name: franka_ros
-    uri: https://github.com/tahsinkose/franka_ros.git
-    version: simulation
+    uri: https://github.com/frankaemika/franka_ros.git
+    version: 0.7.1
+- git:
+    local-name: panda_moveit_config
+    uri: https://github.com/ros-planning/panda_moveit_config.git
+    version: 0.7.5 
 - git:
     local-name: gpd_ros
     uri: https://github.com/atenpas/gpd_ros.git
     version: master
-- git:
-    local-name: panda_realsense_simulation
-    uri: git@github.com:daleondev/panda_realsense_simulation.git
-    version: develop
-- git:
-    local-name: panda_moveit_config
-    uri: git@github.com:daleondev/panda_moveit_config.git
-    version: melodic-devel

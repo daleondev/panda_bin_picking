@@ -1,0 +1,39 @@
+actions: []
+authors: David Leonhardt <david.leonhardt@stud.h-da.de>
+brief: ''
+bugtracker: ''
+depends:
+- pcl_conversions
+- eigen
+- qtbase5-dev
+- moveit_ros_planning
+- libpcl-all-dev
+- catkin
+- moveit_ros_planning_interface
+- pcl_ros
+- roscpp
+- pcl
+- geometric_shapes
+- libqt5-core
+- libqt5-widgets
+- tf2_ros
+- tf2_geometry_msgs
+- moveit_visual_tools
+- sensor_msgs
+- tf2_eigen
+- std_msgs
+- libpcl-all
+- rviz
+- moveit_core
+- std_srvs
+- gpd_ros
+- libqt5-gui
+- franka_gripper
+description: The panda_bin_picking package
+license: TODO
+maintainers: David Leonhardt <david.leonhardt@stud.h-da.de>
+msgs: []
+package_type: package
+repo_url: ''
+srvs: []
+url: ''

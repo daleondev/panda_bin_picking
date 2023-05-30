@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<launch>
+
+  <node name="creatine" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"
+  args="-file $(find panda_realsense_simulation)/models/Twinlab_Premium_Creatine_Fuel_Powder/model.sdf -sdf -x 0.16 -y -0.56 -z 0.9 -model creatine"/>
+
+  <!-- <node name="cereal" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"
+  args="-file $(find panda_realsense_simulation)/models/Vans_Cereal_Honey_Nut_Crunch_11_oz_box/model.sdf -sdf -x 0.0 -y -0.45 -z 0.9 -Y -1.2 -model cereal"/> -->
+
+  <node name="phillips" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"
+  args="-file $(find panda_realsense_simulation)/models/Phillips_Stool_Softener_Liquid_Gels_30_liquid_gels/model.sdf -sdf -x -0.02 -y -0.51 -z 0.9 -model phillips"/>
+
+  <node name="coke" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"
+  args="-file $(find panda_realsense_simulation)/models/Coke/model.sdf -sdf -x 0.12 -y -0.49 -z 0.9 -model coke"/>
+
+</launch>

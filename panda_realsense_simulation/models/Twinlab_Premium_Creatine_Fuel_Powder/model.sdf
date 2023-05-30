@@ -1,0 +1,57 @@
+<?xml version="1.0" ?>
+<!--
+Copyright 2020 Google LLC.
+
+This work is licensed under the Creative Commons Attribution 4.0
+International License. To view a copy of this license, visit
+http://creativecommons.org/licenses/by/4.0/ or send a letter
+to Creative Commons, PO Box 1866, Mountain View, CA 94042, USA.
+-->
+<sdf version="1.6">
+  <model name="Twinlab_Premium_Creatine_Fuel_Powder">
+    <link name="link_0">
+      <inertial>
+        <pose>0 0 0.04 0 0 0</pose>
+        <mass>0.0390</mass>
+        <inertia>
+          <ixx>0.000055575</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.000055575</iyy>
+          <iyz>0</iyz>
+          <izz>0.00001755</izz>
+        </inertia>
+      </inertial>
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>model://Twinlab_Premium_Creatine_Fuel_Powder/meshes/model.obj</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <collision name="collision_0">
+        <geometry>
+          <mesh>
+            <uri>model://Twinlab_Premium_Creatine_Fuel_Powder/meshes/model.obj</uri>
+          </mesh>
+        </geometry>
+        <surface>
+          <contact>
+            <ode>
+              <kp>100000</kp>
+              <kd>100</kd>
+              <max_vel>100.0</max_vel>
+              <min_depth>0.001</min_depth>
+            </ode>
+          </contact>
+          <friction>
+            <ode>
+              <mu>1</mu>
+              <mu2>1</mu2>
+            </ode>
+          </friction>
+        </surface>
+      </collision>     
+    </link>
+  </model>
+</sdf>

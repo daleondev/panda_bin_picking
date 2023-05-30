@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="panda">
+
+  <!-- panda arm and hand model -->
+  <xacro:include filename="$(find franka_description)/robots/panda_arm.xacro"/>
+  <xacro:include filename="$(find franka_description)/robots/hand.xacro"/>
+  <xacro:panda_arm safety_distance="0.03"/>
+  <xacro:hand ns="panda" rpy="0 0 ${-pi/4}" connected_to="panda_link8" safety_distance="0.01"/>
+
+  <!-- table model -->
+  <xacro:include filename="$(find panda_realsense)/urdf/table.xacro"/>
+  <xacro:table xyz="-0.04 0 ${-0.0125/2}" rpy="0 0 0" connected_to="panda_link0" />
+
+  <!-- camera model -->
+  <xacro:include filename="$(find realsense2_description)/urdf/_l515.urdf.xacro" />
+  <xacro:sensor_l515 parent="panda_hand" use_nominal_extrinsics="false" add_plug="false">
+    <origin xyz="-7.800000160932540894e-02 -2.800000086426734924e-02 8.000000379979610443e-03" rpy="2.328999996185302734e+00 -1.542999982833862305e+00 2.299000024795532227e+00"/>
+  </xacro:sensor_l515>
+
+  <!-- estimated camera pose to calculate transformation -->
+  <!-- adjust this according to your estimated camera pose using the estimate_camera_pose.py script -->
+  <!-- <xacro:include filename="$(find panda_realsense)/urdf/camera_estimated.xacro"/>
+  <xacro:camera_estimated connected_to="panda_link0" xyz="3.552891988537019152e-01 2.596021157780831201e-01 1.701583825669876204e-01" rpy="-1.907680195439422466e+00 1.553491500397779834e+00 -1.863674435131223550e+00"/> -->
+</robot>

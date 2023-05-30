@@ -1,0 +1,81 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://wiki.ros.org/xacro">
+
+    <xacro:macro name="table" params="connected_to:='' rpy:='0 0 0' xyz:='0 0 0'">      
+
+        <material name="orange">
+          <color rgba="0.8 0.4 0.0 1.0"/>
+        </material>
+
+        <material name="grey">
+          <color rgba="0.3 0.3 0.3 1.0"/>
+        </material>
+
+        <xacro:unless value="${connected_to == ''}">
+          <joint name="plate_joint" type="fixed">
+            <origin xyz="${xyz}" rpy="${rpy}"/>
+            <parent link="${connected_to}"/>
+            <child link="plate_link"/>          
+          </joint>
+        </xacro:unless>
+
+        <link name="plate_link">
+          <inertial>
+            <mass value="5"/>
+            <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+          </inertial>
+
+          <visual>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+              <box size="0.3 0.3 0.0125" />
+            </geometry>
+            <material name="grey"/>
+          </visual>
+          <collision>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+              <box size="0.3 0.3 0.0125" />
+            </geometry>
+          </collision>
+
+        </link>
+
+        <gazebo reference="plate_link">
+          <material>Gazebo/Grey</material>
+        </gazebo>
+
+        <joint name="table_joint" type="fixed">
+          <origin xyz="0.115 -0.365 ${-0.44-0.0125/2}" rpy="0 0 ${pi/2}"/>
+          <parent link="plate_link"/>
+          <child link="table_link"/>          
+        </joint>
+
+        <link name="table_link">
+          <inertial>
+            <mass value="1000"/>
+            <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+          </inertial>
+
+          <visual>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+              <box size="1.25 0.7 0.88" />
+            </geometry>
+            <material name="orange"/>
+          </visual>
+          <collision>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+              <box size="1.25 0.7 0.88" />
+            </geometry>
+          </collision>
+        </link>
+
+        <gazebo reference="table_link">
+          <material>Gazebo/Orange</material>
+        </gazebo>
+
+    </xacro:macro>
+
+</robot>

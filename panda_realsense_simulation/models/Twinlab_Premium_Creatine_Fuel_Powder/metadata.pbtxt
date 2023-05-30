@@ -1,0 +1,39 @@
+model {
+  file: "model.sdf"
+}
+name: "Twinlab_Premium_Creatine_Fuel_Powder"
+description: "Twinlab Premium Creatine Fuel Powder\nResearch shows that Creatine users had a significant increase in peak power output, lean body mass and muscular performance.* Depletion of phosphocreatine can result in muscular fatigue and fading muscle power.* Research shows that users of high quality creatine monohydrate exhibited: Increased peak power*,  Amplified muscular performance*, Improved lean body mass*,  Advanced performance enhancer with pure Creatine Monohydrate, an energy enhancing supplement*, Improves muscle strength, performance and lean mass*, Featuring precision, micronized, German-sourced brand creatine (micronization allows Creatine powder to stay suspended in liquid longer). *These statements have not been evaluated by the Food and Drug Administration.  This product is not intended to diagnose, treat, cure or prevent disease."
+version: 1
+authors {
+  name: "Google"
+  email: "scanned-objects@google.com"
+}
+legal {
+  copyright: "Copyright 2020 Google LLC."
+  license: "Creative Commons Attribution 4.0 International"
+}
+annotations {
+  key: "brand"
+  value: "Twinlab Fuel"
+}
+annotations {
+  key: "gtin"
+  value: "027434003872"
+}
+annotations {
+  key: "mpn"
+  value: "4715"
+}
+annotations {
+  key: "sku"
+  value: "0-27434-04097-6"
+}
+compatibilities {
+  name: "Gazebo"
+  version {
+    major: 11
+  }
+}
+categories {
+  first: "Bottles and Cans and Cups"
+}

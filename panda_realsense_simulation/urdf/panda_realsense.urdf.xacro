@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="panda">
+
+  <!-- panda arm model -->
+  <xacro:include filename="$(find franka_description)/robots/panda_arm.urdf.xacro"/>
+
+  <!-- panda hand model -->
+  <xacro:include filename="$(find franka_description)/robots/hand.urdf.xacro"/>
+
+  <!-- table model -->
+  <xacro:include filename="$(find panda_realsense_simulation)/urdf/table.xacro"/> 
+  <xacro:table connected_to="panda_link0" xyz="-0.04 0 ${-0.0125/2}" rpy="0 0 0" />
+
+  <!-- camera model -->
+  <xacro:include filename="$(find realsense2_description)/urdf/_l515.urdf.xacro" />
+  <xacro:sensor_l515 parent="panda_hand" use_nominal_extrinsics="true" add_plug="false">
+    <origin xyz="-7.800000160932540894e-02 -2.800000086426734924e-02 8.000000379979610443e-03" rpy="2.328999996185302734e+00 -1.542999982833862305e+00 2.299000024795532227e+00"/>
+  </xacro:sensor_l515>
+
+  <!-- camera gazebo configuration -->
+  <xacro:include filename="$(find panda_realsense_simulation)/urdf/realsense_gazebo.xacro"/>
+  <xacro:realsense_gazebo />
+</robot>
